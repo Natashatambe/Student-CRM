@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100">
+  <rect width="100" height="100" rx="24" fill="#181715" />
+  <!-- Anthropic 4-Spoke Asterisk Mark -->
+  <g transform="translate(50,50) rotate(0)">
+    <rect x="-8" y="-36" width="16" height="72" rx="8" fill="#cc785c" />
+    <rect x="-8" y="-36" width="16" height="72" rx="8" fill="#cc785c" transform="rotate(45)" />
+    <rect x="-8" y="-36" width="16" height="72" rx="8" fill="#cc785c" transform="rotate(90)" />
+    <rect x="-8" y="-36" width="16" height="72" rx="8" fill="#cc785c" transform="rotate(135)" />
+  </g>
+</svg>

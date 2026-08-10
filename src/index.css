@@ -1,0 +1,187 @@
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=EB+Garamond:wght@400;500;600&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
+@import "tailwindcss";
+@import "tw-animate-css";
+
+:root {
+  /* Anthropic / Claude.com Warm Editorial Color Tokens */
+  --canvas: #faf9f5;
+  --ink: #141413;
+  
+  --primary: #cc785c;
+  --primary-active: #a9583e;
+  --primary-disabled: #e6dfd8;
+  --primary-foreground: #ffffff;
+  
+  --accent-teal: #5db8a6;
+  --accent-amber: #e8a55a;
+  
+  --surface-soft: #f5f0e8;
+  --surface-card: #efe9de;
+  --surface-cream-strong: #e8e0d2;
+  --surface-dark: #181715;
+  --surface-dark-elevated: #252320;
+  --surface-dark-soft: #1f1e1b;
+  
+  --hairline: #e6dfd8;
+  --hairline-soft: #ebe6df;
+  
+  --background: #faf9f5;
+  --foreground: #141413;
+  --card: #efe9de;
+  --card-foreground: #141413;
+  --popover: #faf9f5;
+  --popover-foreground: #141413;
+  --secondary: #efe9de;
+  --secondary-foreground: #141413;
+  --muted: #f5f0e8;
+  --muted-foreground: #6c6a64;
+  --accent: #cc785c;
+  --accent-foreground: #ffffff;
+  --destructive: #c64545;
+  --destructive-foreground: #ffffff;
+  --border: #e6dfd8;
+  --input: #e6dfd8;
+  --ring: #cc785c;
+  --radius: 0.5rem; /* 8px default rounded-md */
+
+  /* Sidebar Theme Variables (Dark Navy Product Chrome) */
+  --sidebar-background: #181715;
+  --sidebar-foreground: #faf9f5;
+  --sidebar-primary: #cc785c;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #252320;
+  --sidebar-accent-foreground: #ffffff;
+  --sidebar-border: #252320;
+  --sidebar-ring: #cc785c;
+}
+
+html, body, #root {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  max-width: 100vw;
+  overflow-x: hidden !important;
+  box-sizing: border-box;
+  letter-spacing: -0.01em;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  background-color: #faf9f5;
+  color: #141413;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+/* Editorial Display Headlines - Copernicus / Garamond Slab-Serif Style */
+h1, h2, h3, .font-serif-display {
+  font-family: 'Cormorant Garamond', 'EB Garamond', Georgia, serif;
+  font-weight: 400;
+  letter-spacing: -0.02em;
+}
+
+.font-sans-body {
+  font-family: 'Inter', -apple-system, sans-serif;
+}
+
+.font-mono-code {
+  font-family: 'JetBrains Mono', monospace;
+}
+
+/* Claude Background Ambient Animations */
+@keyframes floatSlow {
+  0%, 100% { transform: translateY(0px) rotate(0deg) scale(1); }
+  50% { transform: translateY(-20px) rotate(6deg) scale(1.05); }
+}
+
+@keyframes floatReverse {
+  0%, 100% { transform: translateY(0px) rotate(0deg) scale(1); }
+  50% { transform: translateY(20px) rotate(-6deg) scale(0.95); }
+}
+
+@keyframes pulseGlow {
+  0%, 100% { opacity: 0.3; transform: scale(1); }
+  50% { opacity: 0.6; transform: scale(1.15); }
+}
+
+.animate-float-slow {
+  animation: floatSlow 8s ease-in-out infinite;
+}
+
+.animate-float-reverse {
+  animation: floatReverse 10s ease-in-out infinite;
+}
+
+.animate-pulse-glow {
+  animation: pulseGlow 6s ease-in-out infinite;
+}
+
+/* Custom Warm Editorial Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #faf9f5;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #e6dfd8;
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #cc785c;
+}
+
+/* Sidebar Specific Scrollbar */
+.sidebar-scroll::-webkit-scrollbar {
+  width: 4px;
+}
+
+.sidebar-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.sidebar-scroll::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 9999px;
+}
+
+/* Claude Hairline Depth & Surface Tokens */
+.claude-card {
+  background-color: #efe9de;
+  border: 1px solid #e6dfd8;
+  border-radius: 12px;
+}
+
+.claude-card-dark {
+  background-color: #181715;
+  border: 1px solid #252320;
+  border-radius: 12px;
+  color: #faf9f5;
+}
+
+.claude-card-coral {
+  background-color: #cc785c;
+  border-radius: 12px;
+  color: #ffffff;
+}
+
+/* Color Utility Classes */
+.bg-canvas { background-color: #faf9f5; }
+.bg-surface-soft { background-color: #f5f0e8; }
+.bg-surface-card { background-color: #efe9de; }
+.bg-surface-dark { background-color: #181715; }
+.bg-surface-dark-elevated { background-color: #252320; }
+.bg-coral { background-color: #cc785c; }
+.bg-coral-active { background-color: #a9583e; }
+
+.text-ink { color: #141413; }
+.text-coral { color: #cc785c; }
+.text-muted-claude { color: #6c6a64; }
+.text-on-dark { color: #faf9f5; }
+
+.border-hairline { border-color: #e6dfd8; }
