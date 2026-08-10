@@ -6,6 +6,16 @@ Designed around a warm editorial aesthetic — featuring tinted cream canvas (`#
 
 ---
 
+## 🖼️ UI Screenshots & Previews
+
+### 📊 Admission Intelligence Dashboard
+![Dashboard Preview](./public/dashboard_preview.png)
+
+### 🔒 Editorial Login Portal
+![Login Preview](./public/login_preview.png)
+
+---
+
 ## ✨ Key Features
 
 - 📊 **Admission Intelligence Dashboard**: Real-time metrics for total students, active batches, admissions count, and revenue performance with interactive Recharts analytics.
@@ -84,7 +94,9 @@ StudentAdmissionCRM/
 │   └── server.js               # Express REST API Server (Port 8080)
 └── frontend/
     ├── public/
-    │   └── favicon.svg         # Anthropic 4-spoke radial asterisk mark SVG
+    │   ├── favicon.svg         # Anthropic 4-spoke radial asterisk mark SVG
+    │   ├── dashboard_preview.png # Dashboard UI Preview Image
+    │   └── login_preview.png   # Login Portal UI Preview Image
     ├── src/
     │   ├── Components/
     │   │   ├── admissions/     # AdmissionTable, AddAdmissionDialog, etc.
