@@ -311,13 +311,6 @@ function Payments() {
 
   const paymentsColumns = useMemo(() => [
     {
-      id: "txnId",
-      accessorKey: "id",
-      header: ({ column }) => <DataGridColumnHeader column={column} title="TXN ID" />,
-      size: 140,
-      cell: ({ getValue }) => <span className="font-mono text-xs font-bold text-[#cc785c]">{getValue()}</span>,
-    },
-    {
       id: "student",
       accessorKey: "studentName",
       header: ({ column }) => <DataGridColumnHeader column={column} title="Student Partner" />,
