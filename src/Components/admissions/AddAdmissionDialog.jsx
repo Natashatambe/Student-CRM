@@ -1,12 +1,12 @@
 import { useEffect, useState } from "react";
 import { getStudents } from "../../services/studentService";
 import { getCourses } from "../../services/courseService";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogBody, DialogFooter } from "../ui/dialog";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetFooter } from "../ui/sheet";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
-import { Select, ShadcnSelect } from "../ui/select";
+import { Select } from "../ui/select";
 import Calendar from "../ui/calendar";
-import { User, BookOpen, Calendar as CalendarIcon, DollarSign, CheckCircle } from "lucide-react";
+import { User, BookOpen, Calendar as CalendarIcon, DollarSign, CheckCircle, Sparkles } from "lucide-react";
 
 function AddAdmissionDialog({ open = true, setOpen, onClose, onSuccess, onAdmissionAdded }) {
   const [students, setStudents] = useState([]);
@@ -144,21 +144,25 @@ function AddAdmissionDialog({ open = true, setOpen, onClose, onSuccess, onAdmiss
   };
 
   return (
-    <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent onClose={handleClose}>
-        <DialogHeader>
-          <DialogTitle>Create Admission Entry</DialogTitle>
-          <DialogDescription>
+    <Sheet open={open} onOpenChange={handleClose}>
+      <SheetContent side="right" className="sm:max-w-lg" onClose={handleClose}>
+        <SheetHeader>
+          <SheetTitle>
+            <BookOpen className="h-5 w-5 text-[#cc785c]" />
+            Create Admission Entry
+            <Sparkles className="h-3.5 w-3.5 text-[#cc785c] fill-current" />
+          </SheetTitle>
+          <SheetDescription>
             Official enrollment registration for partner academy courses.
-          </DialogDescription>
-        </DialogHeader>
+          </SheetDescription>
+        </SheetHeader>
 
-        <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0">
-          <DialogBody className="space-y-4 overflow-y-auto max-h-[60vh] pr-3">
+        <form onSubmit={handleSubmit} className="flex flex-col flex-1 justify-between py-1 overflow-y-auto space-y-4">
+          <div className="space-y-3.5">
             {/* Select Student Partner */}
-            <div className="space-y-1.5">
-              <label className="text-xs font-bold text-[#1E3932] flex items-center gap-1.5 uppercase tracking-wider">
-                <User className="h-3.5 w-3.5 text-[#00754A]" /> Select Student Partner *
+            <div className="space-y-1">
+              <label className="text-[11px] font-bold text-[#141413] flex items-center gap-1.5 uppercase tracking-wider">
+                <User className="h-3.5 w-3.5 text-[#cc785c]" /> Select Student Partner *
               </label>
               <Select
                 name="studentId"
@@ -176,9 +180,9 @@ function AddAdmissionDialog({ open = true, setOpen, onClose, onSuccess, onAdmiss
             </div>
 
             {/* Select Course Track */}
-            <div className="space-y-1.5">
-              <label className="text-xs font-bold text-[#1E3932] flex items-center gap-1.5 uppercase tracking-wider">
-                <BookOpen className="h-3.5 w-3.5 text-[#00754A]" /> Select Course Track *
+            <div className="space-y-1">
+              <label className="text-[11px] font-bold text-[#141413] flex items-center gap-1.5 uppercase tracking-wider">
+                <BookOpen className="h-3.5 w-3.5 text-[#cc785c]" /> Select Course Track *
               </label>
               <Select
                 name="courseId"
@@ -199,9 +203,9 @@ function AddAdmissionDialog({ open = true, setOpen, onClose, onSuccess, onAdmiss
             </div>
 
             {/* Admission Date Selector */}
-            <div className="space-y-1.5 relative">
-              <label className="text-xs font-bold text-[#1E3932] flex items-center gap-1.5 uppercase tracking-wider">
-                <CalendarIcon className="h-3.5 w-3.5 text-[#00754A]" /> Admission Date
+            <div className="space-y-1 relative">
+              <label className="text-[11px] font-bold text-[#141413] flex items-center gap-1.5 uppercase tracking-wider">
+                <CalendarIcon className="h-3.5 w-3.5 text-[#cc785c]" /> Admission Date
               </label>
               <div className="flex items-center gap-2">
                 <Input
@@ -209,16 +213,16 @@ function AddAdmissionDialog({ open = true, setOpen, onClose, onSuccess, onAdmiss
                   name="admissionDate"
                   value={formData.admissionDate}
                   onChange={handleChange}
-                  className="flex-1"
+                  className="flex-1 bg-white border-[#e6dfd8] rounded-xl text-xs font-semibold"
                 />
                 <Button
                   type="button"
                   variant="outline"
                   onClick={() => setShowCalendar(!showCalendar)}
-                  className="px-3 shrink-0"
+                  className="px-3 shrink-0 border-[#e6dfd8] bg-[#faf9f5]"
                   title="Open Calendar DatePicker"
                 >
-                  <CalendarIcon className="h-4 w-4 text-[#00754A]" />
+                  <CalendarIcon className="h-4 w-4 text-[#cc785c]" />
                 </Button>
               </div>
 
@@ -236,9 +240,9 @@ function AddAdmissionDialog({ open = true, setOpen, onClose, onSuccess, onAdmiss
             </div>
 
             {/* Total Fee */}
-            <div className="space-y-1.5">
-              <label className="text-xs font-bold text-[#1E3932] flex items-center gap-1.5 uppercase tracking-wider">
-                <DollarSign className="h-3.5 w-3.5 text-[#00754A]" /> Total Fee (INR)
+            <div className="space-y-1">
+              <label className="text-[11px] font-bold text-[#141413] flex items-center gap-1.5 uppercase tracking-wider">
+                <DollarSign className="h-3.5 w-3.5 text-[#cc785c]" /> Total Fee (INR)
               </label>
               <Input
                 type="number"
@@ -246,12 +250,13 @@ function AddAdmissionDialog({ open = true, setOpen, onClose, onSuccess, onAdmiss
                 placeholder="e.g. 50000"
                 value={formData.totalFee}
                 onChange={handleChange}
+                className="bg-white border-[#e6dfd8] rounded-xl text-xs font-semibold"
               />
             </div>
 
             {/* Payment Type: Full vs EMI */}
-            <div className="space-y-1.5">
-              <label className="text-xs font-bold text-[#1E3932] flex items-center gap-1.5 uppercase tracking-wider">
+            <div className="space-y-1">
+              <label className="text-[11px] font-bold text-[#141413] flex items-center gap-1.5 uppercase tracking-wider">
                 Payment Fee Structure
               </label>
               <Select
@@ -266,9 +271,9 @@ function AddAdmissionDialog({ open = true, setOpen, onClose, onSuccess, onAdmiss
 
             {/* EMI Options if EMI selected */}
             {isEMI && (
-              <div className="bg-[#faf6ee] border border-[#cba258] rounded-xl p-3.5 space-y-3">
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-[#1E3932] uppercase">Select EMI Tenure (Months)</label>
+              <div className="bg-[#efe9de] border border-[#e6dfd8] rounded-xl p-3 space-y-2">
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold text-[#141413] uppercase">Select EMI Tenure (Months)</label>
                   <Select
                     name="emiTenure"
                     value={formData.emiTenure}
@@ -281,9 +286,9 @@ function AddAdmissionDialog({ open = true, setOpen, onClose, onSuccess, onAdmiss
                   </Select>
                 </div>
 
-                <div className="flex justify-between items-center bg-white p-2.5 rounded-lg border border-[#cba258]/40">
-                  <span className="text-xs font-bold text-slate-700">Calculated Monthly EMI:</span>
-                  <span className="text-sm font-extrabold text-[#006241]">
+                <div className="flex justify-between items-center bg-[#faf9f5] p-2 rounded-lg border border-[#e6dfd8]">
+                  <span className="text-[11px] font-bold text-[#6c6a64]">Monthly EMI:</span>
+                  <span className="text-xs font-bold text-[#cc785c]">
                     ₹{monthlyEmi.toLocaleString()} / month ({emiTenureNum} installments)
                   </span>
                 </div>
@@ -292,9 +297,9 @@ function AddAdmissionDialog({ open = true, setOpen, onClose, onSuccess, onAdmiss
 
             {/* Payment Status */}
             {!isEMI && (
-              <div className="space-y-1.5">
-                <label className="text-xs font-bold text-[#1E3932] flex items-center gap-1.5 uppercase tracking-wider">
-                  <CheckCircle className="h-3.5 w-3.5 text-[#00754A]" /> Initial Payment Status
+              <div className="space-y-1">
+                <label className="text-[11px] font-bold text-[#141413] flex items-center gap-1.5 uppercase tracking-wider">
+                  <CheckCircle className="h-3.5 w-3.5 text-[#cc785c]" /> Initial Payment Status
                 </label>
                 <Select
                   name="paymentStatus"
@@ -308,40 +313,40 @@ function AddAdmissionDialog({ open = true, setOpen, onClose, onSuccess, onAdmiss
               </div>
             )}
 
-            {/* Fees Structure Breakdown Summary Card */}
-            <div className="bg-[#eef7f2] border border-[#a3d9c9] rounded-xl p-3.5 space-y-2 mt-2">
-              <div className="flex items-center justify-between border-b border-[#a3d9c9]/60 pb-2">
-                <span className="text-xs font-bold uppercase tracking-wider text-[#006241]">Fee Structure Summary</span>
-                <span className="text-xs font-extrabold text-[#00754A] bg-[#d4e9e2] px-2 py-0.5 rounded-full">
+            {/* Summary Card */}
+            <div className="bg-[#efe9de]/70 border border-[#e6dfd8] rounded-xl p-3 space-y-1.5">
+              <div className="flex items-center justify-between border-b border-[#e6dfd8] pb-1.5">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-[#6c6a64]">Summary</span>
+                <span className="text-[10px] font-bold text-[#cc785c] bg-[#faf9f5] px-2 py-0.5 rounded-full border border-[#e6dfd8]">
                   {isEMI ? `${emiTenureNum} Months EMI` : "Full Payment"}
                 </span>
               </div>
-              <div className="grid grid-cols-2 gap-2 text-xs font-semibold text-[#1E3932]">
+              <div className="grid grid-cols-2 gap-2 text-xs font-semibold text-[#141413]">
                 <div>
-                  <span className="text-slate-500 block text-[11px]">Total Course Fee</span>
-                  <span className="font-extrabold text-sm text-[#006241]">₹{totalFeeNum.toLocaleString()}</span>
+                  <span className="text-[#8e8b82] block text-[10px]">Total Course Fee</span>
+                  <span className="font-bold text-xs text-[#141413]">₹{totalFeeNum.toLocaleString()}</span>
                 </div>
                 <div>
-                  <span className="text-slate-500 block text-[11px]">{isEMI ? "Monthly Installment" : "Payment Status"}</span>
-                  <span className="font-extrabold text-sm text-[#00754A]">
+                  <span className="text-[#8e8b82] block text-[10px]">{isEMI ? "Monthly Installment" : "Status"}</span>
+                  <span className="font-bold text-xs text-[#cc785c]">
                     {isEMI ? `₹${monthlyEmi.toLocaleString()} / mo` : formData.paymentStatus}
                   </span>
                 </div>
               </div>
             </div>
-          </DialogBody>
+          </div>
 
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={handleClose}>
+          <SheetFooter>
+            <Button type="button" variant="outline" onClick={handleClose} className="border-[#e6dfd8] bg-[#faf9f5]">
               Cancel
             </Button>
-            <Button type="submit" variant="primary" className="shadow-md">
+            <Button type="submit" variant="primary" className="bg-[#cc785c] hover:bg-[#a9583e] text-white shadow-md font-bold">
               Save Admission Entry
             </Button>
-          </DialogFooter>
+          </SheetFooter>
         </form>
-      </DialogContent>
-    </Dialog>
+      </SheetContent>
+    </Sheet>
   );
 }
 

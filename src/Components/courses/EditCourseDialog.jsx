@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import CourseForm from "./CourseForm";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogBody, DialogFooter } from "../ui/dialog";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetFooter } from "../ui/sheet";
 import { Button } from "../ui/button";
+import { BookOpen, Sparkles } from "lucide-react";
 
 function EditCourseDialog({
   open,
@@ -52,35 +53,38 @@ function EditCourseDialog({
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogContent onClose={() => setOpen(false)}>
-        <DialogHeader>
-          <DialogTitle>Edit Course Track Details</DialogTitle>
-          <DialogDescription>
-            Modify duration, fees, or status for {course.name || "course"}.
-          </DialogDescription>
-        </DialogHeader>
+    <Sheet open={open} onOpenChange={setOpen}>
+      <SheetContent side="right" className="sm:max-w-md" onClose={() => setOpen(false)}>
+        <SheetHeader>
+          <SheetTitle>
+            <BookOpen className="h-5 w-5 text-[#cc785c]" />
+            Edit Course Track Details
+            <Sparkles className="h-3.5 w-3.5 text-[#cc785c] fill-current" />
+          </SheetTitle>
+          <SheetDescription>
+            Modify duration, fees, or status for {course.name || "course track"}.
+          </SheetDescription>
+        </SheetHeader>
 
-        <form onSubmit={handleUpdate} className="flex flex-col flex-1 overflow-hidden">
-          <DialogBody>
-            <CourseForm course={course} setCourse={setCourse} />
-          </DialogBody>
+        <form onSubmit={handleUpdate} className="flex flex-col flex-1 justify-between space-y-4 py-1">
+          <CourseForm course={course} setCourse={setCourse} />
 
-          <DialogFooter>
+          <SheetFooter>
             <Button
               type="button"
               variant="outline"
               onClick={() => setOpen(false)}
+              className="border-[#e6dfd8] bg-[#faf9f5]"
             >
               Cancel
             </Button>
-            <Button type="submit" variant="primary" className="shadow-md">
+            <Button type="submit" variant="primary" className="bg-[#cc785c] hover:bg-[#a9583e] text-white shadow-md font-bold">
               Update Course Track
             </Button>
-          </DialogFooter>
+          </SheetFooter>
         </form>
-      </DialogContent>
-    </Dialog>
+      </SheetContent>
+    </Sheet>
   );
 }
 

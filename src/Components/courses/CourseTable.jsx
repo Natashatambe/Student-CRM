@@ -74,7 +74,7 @@ function CourseTable({ courses = [], onEdit, onDelete }) {
                   </div>
                 </TableCell>
 
-                <TableCell className="font-medium text-[#141413] text-xs md:text-sm font-serif-display">
+                <TableCell className="font-bold text-[#141413] text-xs md:text-sm tracking-tight min-w-[120px]">
                   {displayFees}
                 </TableCell>
 

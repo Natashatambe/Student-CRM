@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 import {
   ResponsiveContainer,
-  LineChart,
-  Line,
+  AreaChart,
+  Area,
   XAxis,
   YAxis,
   Tooltip,
@@ -55,7 +55,6 @@ function RevenueChart() {
           monthlyRevenue[m] = 0;
         });
 
-        // 1. Sum completed payments by month
         paymentsList.forEach((p) => {
           if (p.date || p.paymentDate) {
             const d = new Date(p.date || p.paymentDate);
@@ -69,7 +68,6 @@ function RevenueChart() {
           }
         });
 
-        // 2. Sum paid admissions by month if no payment record
         admissionsList.forEach((a) => {
           if (a.admissionDate && a.paymentStatus === "Paid") {
             const d = new Date(a.admissionDate);
@@ -117,7 +115,13 @@ function RevenueChart() {
       <CardContent className="pt-4">
         <div className="h-72 w-full">
           <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={chartData} margin={{ top: 10, right: 10, left: 10, bottom: 0 }}>
+            <AreaChart data={chartData} margin={{ top: 10, right: 10, left: 10, bottom: 0 }}>
+              <defs>
+                <linearGradient id="revenueGradient" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#cc785c" stopOpacity={0.35} />
+                  <stop offset="95%" stopColor="#cc785c" stopOpacity={0.0} />
+                </linearGradient>
+              </defs>
               <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e6dfd8" />
               <XAxis
                 dataKey="month"
@@ -143,16 +147,18 @@ function RevenueChart() {
                 }}
               />
               <Legend verticalAlign="top" align="right" wrapperStyle={{ paddingBottom: "10px", fontSize: "12px", fontWeight: "600" }} />
-              <Line
+              <Area
                 type="monotone"
                 dataKey="revenue"
                 name="Processed Fees (₹)"
                 stroke="#cc785c"
                 strokeWidth={3}
-                dot={{ r: 5, fill: "#cc785c", strokeWidth: 2, stroke: "#faf9f5" }}
-                activeDot={{ r: 8, fill: "#cc785c" }}
+                fillOpacity={1}
+                fill="url(#revenueGradient)"
+                dot={{ r: 4, fill: "#cc785c", strokeWidth: 2, stroke: "#faf9f5" }}
+                activeDot={{ r: 7, fill: "#cc785c" }}
               />
-            </LineChart>
+            </AreaChart>
           </ResponsiveContainer>
         </div>
       </CardContent>

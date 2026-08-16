@@ -22,11 +22,11 @@ function StudentStatsCard({ title, value, active = false, onClick }) {
   const getBadgeStyle = () => {
     switch (title) {
       case "Active Students":
-        return "bg-[#d4e9e2] text-[#006241] border-[#a3d9c9]";
+        return "bg-[#d4e9e2] text-[#00754A] border-[#a3d9c9]";
       case "Pending Students":
-        return "bg-[#fef3c7] text-[#92400e] border-[#fde68a]";
+        return "bg-[#efe9de] text-[#cc785c] border-[#e6dfd8]";
       case "Inactive Students":
-        return "bg-[#fee2e2] text-[#991b1b] border-[#fca5a5]";
+        return "bg-[#fde8e8] text-[#c64545] border-[#fbd5d5]";
       default:
         return "bg-[#efe9de] text-[#141413] border-[#e6dfd8]";
     }

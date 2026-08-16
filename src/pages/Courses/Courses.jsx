@@ -5,6 +5,7 @@ import CourseStatsCard from "../../Components/courses/CourseStatsCard";
 import AddCourseDialog from "../../Components/courses/AddCourseDialog";
 import EditCourseDialog from "../../Components/courses/EditCourseDialog";
 import DeleteCourseDialog from "../../Components/courses/DeleteCourseDialog";
+import PageHeader from "../../Components/common/PageHeader";
 import { Button } from "../../Components/ui/button";
 import { Input } from "../../Components/ui/input";
 import { Card, CardContent } from "../../Components/ui/card";
@@ -205,35 +206,31 @@ function Courses() {
   return (
     <Layout>
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
-        <div>
-          <h1 className="text-3xl md:text-4xl font-normal text-[#141413] tracking-tight font-serif-display flex items-center gap-2">
-            <span className="text-[#cc785c] font-bold text-2xl">✱</span>
-            Course Curriculum Catalog
-          </h1>
-          <p className="text-sm text-[#6c6a64] font-medium mt-1">
-            Manage course offerings, fee structures, and active track batches
-          </p>
-        </div>
+      <PageHeader
+        title="Course Curriculum Catalog"
+        description="Manage course offerings, fee structures, and active track batches"
+        categoryTag="Curriculum Catalog"
+        actions={
+          <div className="flex flex-wrap items-center gap-2.5">
+            <Button onClick={handleExportExcel} variant="outline" size="sm" className="gap-1.5 border-[#e6dfd8] bg-[#faf9f5]">
+              <FileSpreadsheet className="h-3.5 w-3.5 text-[#00754A]" /> Export Excel
+            </Button>
 
-        <div className="flex flex-wrap items-center gap-2.5">
-          <Button onClick={handleExportExcel} variant="outline" size="sm" className="gap-1.5 border-[#e6dfd8] bg-[#faf9f5]">
-            <FileSpreadsheet className="h-4 w-4 text-[#00754A]" /> Export Excel
-          </Button>
+            <Button onClick={handleExportPDF} variant="outline" size="sm" className="gap-1.5 border-[#e6dfd8] bg-[#faf9f5]">
+              <Download className="h-3.5 w-3.5 text-[#cc785c]" /> Export PDF Sheet
+            </Button>
 
-          <Button onClick={handleExportPDF} variant="outline" size="sm" className="gap-1.5 border-[#e6dfd8] bg-[#faf9f5]">
-            <Download className="h-4 w-4 text-[#cc785c]" /> Export PDF Sheet
-          </Button>
-
-          <Button
-            onClick={() => setOpenAdd(true)}
-            variant="primary"
-            className="shadow-xs gap-2 bg-[#cc785c] hover:bg-[#a9583e]"
-          >
-            <Plus className="h-4 w-4" /> Add New Course Track
-          </Button>
-        </div>
-      </div>
+            <Button
+              onClick={() => setOpenAdd(true)}
+              variant="primary"
+              size="sm"
+              className="shadow-xs gap-1.5 bg-[#cc785c] hover:bg-[#a9583e]"
+            >
+              <Plus className="h-3.5 w-3.5" /> Add New Course Track
+            </Button>
+          </div>
+        }
+      />
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">

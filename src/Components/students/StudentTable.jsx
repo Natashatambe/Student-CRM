@@ -19,6 +19,7 @@ import { Badge } from "../ui/badge";
 import { Avatar, AvatarImage, AvatarFallback } from "../ui/avatar";
 import { Button } from "../ui/button";
 import { cn, normalizeStatus } from "../../lib/utils";
+import StatusBadge from "../common/StatusBadge";
 
 const formatDateWithSpace = (rawDate) => {
   if (!rawDate) return "N/A";
@@ -53,13 +54,13 @@ const StatusBadgeButton = ({ status, onSelect }) => {
   const getStatusStyles = (st) => {
     switch (st) {
       case "Active":
-        return "bg-[#d4e9e2] text-[#006241] border-[#a3d9c9] hover:bg-[#b8e2d4]";
+        return "bg-[#d4e9e2] text-[#00754A] border-[#a3d9c9] hover:bg-[#b8e2d4]";
       case "Pending":
-        return "bg-[#fef3c7] text-[#92400e] border-[#fde68a] hover:bg-[#fde68a]";
+        return "bg-[#efe9de] text-[#cc785c] border-[#e6dfd8] hover:bg-[#e8e0d2]";
       case "Enquiry":
-        return "bg-[#e0f2fe] text-[#0369a1] border-[#bae6fd] hover:bg-[#bae6fd]";
+        return "bg-[#faf9f5] text-[#141413] border-[#e6dfd8] hover:bg-[#efe9de]";
       default:
-        return "bg-[#fee2e2] text-[#991b1b] border-[#fca5a5] hover:bg-[#fca5a5]";
+        return "bg-[#fde8e8] text-[#c64545] border-[#fbd5d5] hover:bg-[#fbd5d5]";
     }
   };
 
@@ -68,11 +69,11 @@ const StatusBadgeButton = ({ status, onSelect }) => {
       case "Active":
         return "bg-[#00754A]";
       case "Pending":
-        return "bg-[#d97706]";
+        return "bg-[#cc785c]";
       case "Enquiry":
-        return "bg-[#0284c7]";
+        return "bg-[#141413]";
       default:
-        return "bg-[#dc2626]";
+        return "bg-[#c64545]";
     }
   };
 
@@ -383,31 +384,20 @@ function StudentTable({ students = [], onEdit, onDelete, onView, onStatusChange 
                   </TableCell>
 
                   {/* Admission Data */}
-                  <TableCell className="py-3.5 px-3 align-top">
+                  <TableCell className="py-3.5 px-4 align-top min-w-[180px]">
                     {hasAdmission ? (
-                      <div className="space-y-1 text-xs">
-                        <div className="flex items-center gap-1.5">
-                          <span className="font-mono font-bold text-[#cc785c] text-[11px] bg-[#faf9f5] border border-[#e6dfd8] px-1.5 py-0.5 rounded">
+                      <div className="space-y-1.5 text-xs">
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono font-bold text-[#cc785c] text-[11px] bg-[#faf9f5] border border-[#e6dfd8] px-1.5 py-0.5 rounded-md shadow-2xs">
                             {admIdStr}
                           </span>
-                          <span className="font-serif-display font-bold text-[#141413]">
+                          <span className="font-serif-display font-bold text-[#141413] text-sm">
                             ₹{feeNum.toLocaleString()}
                           </span>
                         </div>
                         <div className="flex items-center gap-1.5 flex-wrap">
-                          <Badge
-                            variant={
-                              payStatus.toLowerCase() === "paid" || payStatus.toLowerCase() === "completed"
-                                ? "success"
-                                : payStatus.toLowerCase() === "partial"
-                                ? "amber"
-                                : "destructive"
-                            }
-                            className="text-[10px] px-1.5 py-0"
-                          >
-                            Fee {payStatus}
-                          </Badge>
-                          <span className="text-[10px] font-mono text-[#6c6a64] flex items-center gap-1 bg-[#efe9de] px-1.5 py-0.5 rounded border border-[#e6dfd8]">
+                          <StatusBadge status={payStatus} />
+                          <span className="text-[10px] font-mono text-[#6c6a64] flex items-center gap-1 bg-[#efe9de] px-1.5 py-0.5 rounded-md border border-[#e6dfd8]">
                             <Calendar className="h-3 w-3 text-[#cc785c] shrink-0" />
                             {formatDateWithSpace(admDateStr)}
                           </span>

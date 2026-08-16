@@ -6,6 +6,7 @@ import EditStudentDialog from "../../Components/students/EditStudentDialog";
 import DeleteStudentDialog from "../../Components/students/DeleteStudentDialog";
 import ViewStudentDialog from "../../Components/students/ViewStudentDialog";
 import StudentStatsCard from "../../Components/students/StudentStatsCard";
+import PageHeader from "../../Components/common/PageHeader";
 import { Button } from "../../Components/ui/button";
 import { Input } from "../../Components/ui/input";
 import { Select } from "../../Components/ui/select";
@@ -406,54 +407,50 @@ function Students() {
   return (
     <Layout>
       {/* Page Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
-        <div>
-          <h1 className="text-3xl md:text-4xl font-normal text-[#141413] tracking-tight font-serif-display flex items-center gap-2">
-            <span className="text-[#cc785c] font-bold text-2xl">✱</span>
-            Student Partner Directory
-          </h1>
-          <p className="text-sm text-[#6c6a64] font-medium mt-1">
-            Manage partner student records, enrollment tracks, and active status
-          </p>
-        </div>
+      <PageHeader
+        title="Student Partner Directory"
+        description="Manage partner student records, enrollment tracks, and active status"
+        categoryTag="Partner Desk"
+        actions={
+          <div className="flex flex-wrap items-center gap-2">
+            <Button
+              onClick={handleExportExcel}
+              variant="outline"
+              size="sm"
+              className="gap-1.5 border-[#e6dfd8] bg-[#faf9f5] hover:bg-[#efe9de] text-[#141413]"
+            >
+              <FileSpreadsheet className="h-3.5 w-3.5 text-[#00754A]" /> Export Excel
+            </Button>
 
-        <div className="flex flex-wrap items-center gap-2">
-          <Button
-            onClick={handleExportExcel}
-            variant="outline"
-            size="sm"
-            className="gap-1.5 border-[#e6dfd8] bg-[#faf9f5] hover:bg-[#efe9de] text-[#141413]"
-          >
-            <FileSpreadsheet className="h-4 w-4 text-[#00754A]" /> Export Excel
-          </Button>
+            <Button
+              onClick={handleExportPDF}
+              variant="outline"
+              size="sm"
+              className="gap-1.5 border-[#e6dfd8] bg-[#faf9f5] hover:bg-[#efe9de] text-[#141413]"
+            >
+              <Download className="h-3.5 w-3.5 text-[#cc785c]" /> Export PDF
+            </Button>
 
-          <Button
-            onClick={handleExportPDF}
-            variant="outline"
-            size="sm"
-            className="gap-1.5 border-[#e6dfd8] bg-[#faf9f5] hover:bg-[#efe9de] text-[#141413]"
-          >
-            <Download className="h-4 w-4 text-[#cc785c]" /> Export PDF
-          </Button>
+            <Button
+              onClick={handleExportInactivePDF}
+              variant="outline"
+              size="sm"
+              className="gap-1.5 border-[#e6dfd8] bg-[#faf9f5] text-[#cc785c] hover:bg-[#efe9de]"
+            >
+              <FileText className="h-3.5 w-3.5 text-[#cc785c]" /> Inactive PDF
+            </Button>
 
-          <Button
-            onClick={handleExportInactivePDF}
-            variant="outline"
-            size="sm"
-            className="gap-1.5 border-[#e6dfd8] bg-[#faf9f5] text-[#cc785c] hover:bg-[#efe9de]"
-          >
-            <FileText className="h-4 w-4 text-[#cc785c]" /> Inactive PDF
-          </Button>
-
-          <Button
-            onClick={() => setOpenAdd(true)}
-            variant="primary"
-            className="shadow-xs gap-2 bg-[#cc785c] hover:bg-[#a9583e]"
-          >
-            <Plus className="h-4 w-4" /> Enroll Student
-          </Button>
-        </div>
-      </div>
+            <Button
+              onClick={() => setOpenAdd(true)}
+              variant="primary"
+              size="sm"
+              className="shadow-xs gap-1.5 bg-[#cc785c] hover:bg-[#a9583e]"
+            >
+              <Plus className="h-3.5 w-3.5" /> Enroll Student
+            </Button>
+          </div>
+        }
+      />
 
       {/* Interactive Responsive Stats Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-8">

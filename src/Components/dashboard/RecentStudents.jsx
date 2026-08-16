@@ -1,11 +1,11 @@
 import { useEffect, useState } from "react";
 import { Avatar, AvatarImage, AvatarFallback } from "../ui/avatar";
-import { Badge } from "../ui/badge";
 import { Card, CardHeader, CardTitle, CardContent } from "../ui/card";
 import { Button } from "../ui/button";
 import { useNavigate } from "react-router-dom";
 import { ArrowRight, UserCheck } from "lucide-react";
 import { getStudents } from "../../services/studentService";
+import StatusBadge from "../common/StatusBadge";
 
 function RecentStudents() {
   const navigate = useNavigate();
@@ -40,7 +40,7 @@ function RecentStudents() {
   };
 
   return (
-    <Card className="bg-[#efe9de] border-[#e6dfd8]">
+    <Card className="bg-[#efe9de] border-[#e6dfd8] shadow-xs">
       <CardHeader className="flex flex-row items-center justify-between pb-4">
         <CardTitle className="text-xl font-normal text-[#141413] flex items-center gap-2 font-serif-display">
           <UserCheck className="h-4.5 w-4.5 text-[#cc785c]" />
@@ -50,7 +50,7 @@ function RecentStudents() {
           variant="ghost"
           size="sm"
           onClick={() => navigate("/students")}
-          className="text-xs text-[#cc785c] hover:text-[#a9583e] font-medium gap-1"
+          className="text-xs text-[#cc785c] hover:text-[#a9583e] font-bold gap-1"
         >
           View All <ArrowRight className="h-3.5 w-3.5" />
         </Button>
@@ -63,20 +63,22 @@ function RecentStudents() {
                   .split(" ")
                   .map((n) => n[0])
                   .join("")
+                  .slice(0, 2)
+                  .toUpperCase()
               : "ST";
             const dicebearAvatar = `https://api.dicebear.com/10.x/glyphs/svg?seed=${encodeURIComponent(student.name)}`;
 
             return (
-              <div key={index} className="py-3 flex items-center justify-between hover:bg-[#faf9f5]/60 px-2 rounded-md transition">
+              <div key={index} className="py-3 flex items-center justify-between hover:bg-[#faf9f5]/70 px-2.5 rounded-xl transition">
                 <div className="flex items-center gap-3">
-                  <Avatar className="h-8.5 w-8.5 ring-1 ring-[#cc785c]/40 bg-[#faf9f5]">
+                  <Avatar className="h-8.5 w-8.5 ring-1 ring-[#cc785c]/40 bg-[#faf9f5] shrink-0">
                     <AvatarImage src={dicebearAvatar} alt={student.name} />
-                    <AvatarFallback className="bg-[#cc785c] text-white text-xs font-medium">
+                    <AvatarFallback className="bg-[#cc785c] text-white text-xs font-semibold">
                       {initials}
                     </AvatarFallback>
                   </Avatar>
                   <div>
-                    <h4 className="text-base font-serif-display font-normal text-[#141413] leading-tight">{student.name}</h4>
+                    <h4 className="text-sm font-serif-display font-medium text-[#141413] leading-snug">{student.name}</h4>
                     <p className="text-xs text-[#6c6a64] font-medium">{student.course}</p>
                   </div>
                 </div>
@@ -85,9 +87,7 @@ function RecentStudents() {
                   <span className="text-[11px] text-[#8e8b82] font-medium hidden sm:inline-block">
                     {student.date}
                   </span>
-                  <Badge variant={student.status === "Active" ? "success" : student.status === "Pending" ? "amber" : student.status === "Enquiry" ? "secondary" : "destructive"}>
-                    {student.status}
-                  </Badge>
+                  <StatusBadge status={student.status} />
                 </div>
               </div>
             );

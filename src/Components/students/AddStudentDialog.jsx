@@ -1,8 +1,9 @@
 import { useState } from "react";
 import StudentForm from "./StudentForm";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogBody, DialogFooter } from "../ui/dialog";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetFooter } from "../ui/sheet";
 import { Button } from "../ui/button";
 import { normalizeStatus } from "../../lib/utils";
+import { GraduationCap, Sparkles } from "lucide-react";
 
 function AddStudentDialog({ open, setOpen, onStudentAdded }) {
   const [student, setStudent] = useState({
@@ -79,35 +80,40 @@ function AddStudentDialog({ open, setOpen, onStudentAdded }) {
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogContent onClose={() => setOpen(false)}>
-        <DialogHeader>
-          <DialogTitle>Enroll New Student Partner</DialogTitle>
-          <DialogDescription>
+    <Sheet open={open} onOpenChange={setOpen}>
+      <SheetContent side="right" className="sm:max-w-xl" onClose={() => setOpen(false)}>
+        <SheetHeader>
+          <SheetTitle>
+            <GraduationCap className="h-6 w-6 text-[#cc785c]" />
+            Enroll New Student Partner
+            <Sparkles className="h-4 w-4 text-[#cc785c] fill-current" />
+          </SheetTitle>
+          <SheetDescription>
             Register a new student partner record. All missing fields will auto-fill cleanly.
-          </DialogDescription>
-        </DialogHeader>
+          </SheetDescription>
+        </SheetHeader>
 
-        <form onSubmit={handleSave} className="flex flex-col flex-1 overflow-hidden">
-          <DialogBody>
+        <form onSubmit={handleSave} className="flex flex-col flex-1 justify-between overflow-y-auto space-y-4">
+          <div className="py-2">
             <StudentForm student={student} setStudent={setStudent} />
-          </DialogBody>
+          </div>
 
-          <DialogFooter>
+          <SheetFooter>
             <Button
               type="button"
               variant="outline"
               onClick={() => setOpen(false)}
+              className="border-[#e6dfd8] bg-[#faf9f5]"
             >
               Cancel
             </Button>
             <Button type="submit" variant="primary" className="bg-[#cc785c] hover:bg-[#a9583e] text-white shadow-md font-bold">
               Enroll Student Partner
             </Button>
-          </DialogFooter>
+          </SheetFooter>
         </form>
-      </DialogContent>
-    </Dialog>
+      </SheetContent>
+    </Sheet>
   );
 }
 

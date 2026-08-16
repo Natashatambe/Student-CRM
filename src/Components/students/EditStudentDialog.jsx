@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
 import StudentForm from "./StudentForm";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogBody, DialogFooter } from "../ui/dialog";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetFooter } from "../ui/sheet";
 import { Button } from "../ui/button";
 import { normalizeStatus } from "../../lib/utils";
+import { UserCheck, Sparkles } from "lucide-react";
 
 function EditStudentDialog({
   open,
@@ -36,8 +37,8 @@ function EditStudentDialog({
       const feeVal = Number(studentData.totalFee || studentData.fees || studentData.admission?.totalFee || 50000);
       const pType = studentData.paymentType || studentData.admission?.paymentType || "Full";
       const eTenure = Number(studentData.emiTenure || studentData.admission?.emiTenure || 3);
-      const pStatus = studentData.paymentStatus || studentData.admission?.paymentStatus || (pType === "EMI" ? "Partial" : (normStatus === "Active" ? "Paid" : "Pending"));
       const normStatus = normalizeStatus(studentData.status);
+      const pStatus = studentData.paymentStatus || studentData.admission?.paymentStatus || (pType === "EMI" ? "Partial" : (normStatus === "Active" ? "Paid" : "Pending"));
       const admId = studentData.admissionId || studentData.admission?.admissionId || studentData.admission?.id || sId;
       const admDate = studentData.admissionDate || studentData.admission?.admissionDate || new Date().toISOString().split("T")[0];
 
@@ -118,35 +119,40 @@ function EditStudentDialog({
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogContent onClose={() => setOpen(false)}>
-        <DialogHeader>
-          <DialogTitle>Edit Student Details</DialogTitle>
-          <DialogDescription>
-            Update partner enrollment information for {student.firstName || student.name || "student"}.
-          </DialogDescription>
-        </DialogHeader>
+    <Sheet open={open} onOpenChange={setOpen}>
+      <SheetContent side="right" className="sm:max-w-xl" onClose={() => setOpen(false)}>
+        <SheetHeader>
+          <SheetTitle>
+            <UserCheck className="h-5 w-5 text-[#cc785c]" />
+            Edit Student Details
+            <Sparkles className="h-3.5 w-3.5 text-[#cc785c] fill-current" />
+          </SheetTitle>
+          <SheetDescription>
+            Update partner enrollment information for {student.firstName || student.name || "student partner"}.
+          </SheetDescription>
+        </SheetHeader>
 
-        <form onSubmit={handleUpdate} className="flex flex-col flex-1 overflow-hidden">
-          <DialogBody>
+        <form onSubmit={handleUpdate} className="flex flex-col flex-1 justify-between overflow-y-auto space-y-4">
+          <div className="py-1">
             <StudentForm student={student} setStudent={setStudent} />
-          </DialogBody>
+          </div>
 
-          <DialogFooter>
+          <SheetFooter>
             <Button
               type="button"
               variant="outline"
               onClick={() => setOpen(false)}
+              className="border-[#e6dfd8] bg-[#faf9f5]"
             >
               Cancel
             </Button>
             <Button type="submit" variant="primary" className="bg-[#cc785c] hover:bg-[#a9583e] text-white shadow-md font-bold">
               Update Student Record
             </Button>
-          </DialogFooter>
+          </SheetFooter>
         </form>
-      </DialogContent>
-    </Dialog>
+      </SheetContent>
+    </Sheet>
   );
 }
 

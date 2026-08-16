@@ -4,6 +4,7 @@ import { Badge } from "../ui/badge";
 import { Avatar, AvatarImage, AvatarFallback } from "../ui/avatar";
 import { Button } from "../ui/button";
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "../ui/dropdown-menu";
+import StatusBadge from "../common/StatusBadge";
 
 const formatDateWithSpace = (rawDate) => {
   if (!rawDate) return "N/A";
@@ -102,30 +103,24 @@ function AdmissionTable({ admissions = [], onEdit, onDelete, onManageEmi, onView
                   </div>
                 </TableCell>
 
-                <TableCell className="font-medium text-[#141413] text-xs md:text-sm font-serif-display">
+                <TableCell className="font-bold text-[#141413] text-xs md:text-sm tracking-tight min-w-[110px]">
                   ₹{totalFeeNum.toLocaleString()}
                 </TableCell>
 
-                <TableCell>
+                <TableCell className="min-w-[160px]">
                   <div className="space-y-1">
-                    <Badge
-                      variant={
-                        isPaidStatus
-                          ? "success"
-                          : status.toLowerCase() === "partial"
-                          ? "amber"
-                          : "destructive"
-                      }
-                      className={isEmi ? "cursor-pointer hover:opacity-80" : ""}
+                    <StatusBadge
+                      status={status}
+                      isEmi={isEmi}
+                      emiPaidCount={emiPaidCount}
+                      emiTenure={emiTenure}
                       onClick={() => isEmi && onManageEmi && onManageEmi(admission)}
-                    >
-                      {status}
-                    </Badge>
+                    />
                     {isEmi && (
                       <span
                         onClick={() => onManageEmi && onManageEmi(admission)}
                         className={`block text-[11px] font-bold cursor-pointer hover:underline ${
-                          emiPaidCount >= emiTenure || isPaidStatus ? "text-[#00754A]" : "text-[#006241]"
+                          emiPaidCount >= emiTenure || isPaidStatus ? "text-[#00754A]" : "text-[#cc785c]"
                         }`}
                       >
                         💳 {emiPaidCount >= emiTenure || isPaidStatus ? `EMI Completed (${emiTenure}/${emiTenure} Paid 🎉)` : `${emiTenure} Mo EMI (${emiPaidCount}/${emiTenure} Paid)`}

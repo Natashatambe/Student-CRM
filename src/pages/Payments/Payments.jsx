@@ -3,18 +3,20 @@ import Layout from "../../Components/layout/Layout";
 import { Card, CardContent } from "../../Components/ui/card";
 import { Button } from "../../Components/ui/button";
 import { Input } from "../../Components/ui/input";
-import { Badge } from "../../Components/ui/badge";
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from "../../Components/ui/table";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogBody, DialogFooter } from "../../Components/ui/dialog";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetFooter } from "../../Components/ui/sheet";
 import { Select } from "../../Components/ui/select";
 import { useToast } from "../../Components/ui/toast";
-import { CreditCard, DollarSign, Clock, CheckCircle2, Plus, Search, ArrowUpRight, Star, Download, FileSpreadsheet, Mail, FileText, Sparkles } from "lucide-react";
+import { CreditCard, DollarSign, Clock, CheckCircle2, Plus, Search, ArrowUpRight, Download, FileSpreadsheet, Mail, Sparkles, User, BookOpen } from "lucide-react";
 import { getPayments, addPayment } from "../../services/paymentService";
 import { getAdmissions } from "../../services/admissionService";
 import { exportToExcel, exportToPDF } from "../../lib/exportUtils";
 import { generatePaymentReceiptPDF, sendReceiptEmailAPI } from "../../lib/receiptUtils";
 import EmailReceiptModal from "../../Components/common/EmailReceiptModal";
 import StripePaymentModal from "../../Components/common/StripePaymentModal";
+import PageHeader from "../../Components/common/PageHeader";
+import StatCard from "../../Components/common/StatCard";
+import StatusBadge from "../../Components/common/StatusBadge";
 
 function Payments() {
   const { showToast } = useToast();
@@ -180,12 +182,10 @@ function Payments() {
 
   const [statusTab, setStatusTab] = useState("all");
 
-  // Combine explicit payments and admissions desk transactions for complete financial view
   const getCombinedPaymentsList = () => {
     const list = [];
     const addedIds = new Set();
 
-    // 1. Add explicit payment records
     payments.forEach((p) => {
       const key = String(p.id || p.txnId).toLowerCase();
       addedIds.add(key);
@@ -202,7 +202,6 @@ function Payments() {
       });
     });
 
-    // 2. Combine with admissions desk student payment records & EMI schedules
     admissions.forEach((a, idx) => {
       const sName = a.studentName || (typeof a.student === "string" ? a.student : (a.student?.name || `${a.student?.firstName || ""} ${a.student?.lastName || ""}`.trim())) || "Student Partner";
       const sMail = a.studentEmail || a.student?.email || "student@gmail.com";
@@ -305,109 +304,84 @@ function Payments() {
   return (
     <Layout>
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
-        <div>
-          <h1 className="text-3xl md:text-4xl font-normal text-[#141413] tracking-tight font-serif-display flex items-center gap-2">
-            <span className="text-[#cc785c] font-bold text-2xl">✱</span>
-            Fee Transactions & Financials
-          </h1>
-          <p className="text-sm text-[#6c6a64] font-medium mt-1">
-            Track student fee receipts, payment modes, and financial transactions
-          </p>
-        </div>
+      <PageHeader
+        title="Fee Transactions & Financials"
+        description="Track student fee receipts, payment modes, and financial transactions"
+        categoryTag="Financial Intelligence"
+        actions={
+          <div className="flex flex-wrap items-center gap-2.5">
+            <Button onClick={handleExportExcel} variant="outline" size="sm" className="gap-1.5 border-[#e6dfd8] bg-[#faf9f5]">
+              <FileSpreadsheet className="h-3.5 w-3.5 text-[#00754A]" /> Export Excel
+            </Button>
 
-        <div className="flex flex-wrap items-center gap-2.5">
-          <Button onClick={handleExportExcel} variant="outline" size="sm" className="gap-1.5 border-[#e6dfd8] bg-[#faf9f5] hover:bg-[#efe9de] text-[#141413]">
-            <FileSpreadsheet className="h-4 w-4 text-[#00754A]" /> Export Excel
-          </Button>
+            <Button onClick={handleExportPDF} variant="outline" size="sm" className="gap-1.5 border-[#e6dfd8] bg-[#faf9f5]">
+              <Download className="h-3.5 w-3.5 text-[#cc785c]" /> Export PDF Sheet
+            </Button>
 
-          <Button onClick={handleExportPDF} variant="outline" size="sm" className="gap-1.5 border-[#e6dfd8] bg-[#faf9f5] hover:bg-[#efe9de] text-[#141413]">
-            <Download className="h-4 w-4 text-[#cc785c]" /> Export PDF Sheet
-          </Button>
+            <Button
+              onClick={() => handleLaunchStripeDirect()}
+              variant="outline"
+              size="sm"
+              className="gap-1.5 border-[#635bff] text-[#635bff] bg-[#faf9f5] font-bold hover:bg-[#635bff]/10"
+            >
+              <Sparkles className="h-3.5 w-3.5" /> Stripe Test Checkout
+            </Button>
 
-          <Button
-            onClick={() => handleLaunchStripeDirect()}
-            variant="outline"
-            size="sm"
-            className="gap-1.5 border-[#635bff] text-[#635bff] bg-[#faf9f5] font-bold hover:bg-[#635bff]/10"
-          >
-            <Sparkles className="h-4 w-4" /> Stripe Test Checkout
-          </Button>
-
-          <Button
-            onClick={() => setOpenModal(true)}
-            variant="primary"
-            className="shadow-xs gap-2 bg-[#cc785c] hover:bg-[#a9583e]"
-          >
-            <Plus className="h-4 w-4" /> Record Fee Receipt
-          </Button>
-        </div>
-      </div>
+            <Button
+              onClick={() => setOpenModal(true)}
+              variant="primary"
+              size="sm"
+              className="shadow-xs gap-1.5 bg-[#cc785c] hover:bg-[#a9583e]"
+            >
+              <Plus className="h-3.5 w-3.5" /> Record Fee Receipt
+            </Button>
+          </div>
+        }
+      />
 
       {/* Stat Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        <Card className="p-6 bg-[#efe9de] border-[#e6dfd8] shadow-xs">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-xs font-bold text-[#6c6a64] uppercase">Total Fee Collected</p>
-              <h2 className="text-2xl font-normal font-serif-display text-[#141413] mt-2">₹{totalCollected.toLocaleString()}</h2>
-            </div>
-            <div className="h-10 w-10 rounded-full bg-[#faf9f5] text-[#00754A] border border-[#e6dfd8] flex items-center justify-center font-bold">
-              <DollarSign className="h-5 w-5" />
-            </div>
-          </div>
-        </Card>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-8">
+        <StatCard
+          title="TOTAL FEE COLLECTED"
+          value={`₹${totalCollected.toLocaleString()}`}
+          subtitle="Processed fee payments"
+          icon={DollarSign}
+        />
 
-        <Card className="p-6 bg-[#efe9de] border-[#e6dfd8] shadow-xs">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-xs font-bold text-[#6c6a64] uppercase">Pending Dues</p>
-              <h2 className="text-2xl font-normal font-serif-display text-[#141413] mt-2">₹{pendingDues.toLocaleString()}</h2>
-            </div>
-            <div className="h-10 w-10 rounded-full bg-[#faf6ee] text-[#cba258] border border-[#cba258] flex items-center justify-center">
-              <Clock className="h-5 w-5" />
-            </div>
-          </div>
-        </Card>
+        <StatCard
+          title="PENDING DUES"
+          value={`₹${pendingDues.toLocaleString()}`}
+          subtitle="Outstanding installments"
+          icon={Clock}
+        />
 
-        <Card className="p-6 bg-[#efe9de] border-[#e6dfd8] shadow-xs">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-xs font-bold text-[#6c6a64] uppercase">Successful Receipts</p>
-              <h2 className="text-2xl font-normal font-serif-display text-[#141413] mt-2">{payments.filter(p => p.status === "Completed").length}</h2>
-            </div>
-            <div className="h-10 w-10 rounded-full bg-[#faf9f5] text-[#cc785c] border border-[#e6dfd8] flex items-center justify-center">
-              <CheckCircle2 className="h-5 w-5" />
-            </div>
-          </div>
-        </Card>
+        <StatCard
+          title="SUCCESSFUL RECEIPTS"
+          value={payments.filter((p) => p.status === "Completed").length}
+          subtitle="Total verified receipts"
+          icon={CheckCircle2}
+        />
 
-        <Card className="p-6 bg-[#faf6ee] border border-[#cba258] shadow-xs">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-xs font-bold text-[#cba258] uppercase flex items-center gap-1">
-                <Star className="h-3 w-3 fill-current" /> Collection Rate
-              </p>
-              <h2 className="text-2xl font-normal font-serif-display text-[#141413] mt-2">{collectionRate}%</h2>
-            </div>
-            <div className="h-10 w-10 rounded-full bg-[#cba258] text-white flex items-center justify-center">
-              <ArrowUpRight className="h-5 w-5" />
-            </div>
-          </div>
-        </Card>
+        <StatCard
+          title="COLLECTION RATE"
+          value={`${collectionRate}%`}
+          subtitle="Revenue velocity"
+          icon={ArrowUpRight}
+          badgeText="Performance"
+        />
       </div>
 
       {/* Main Transactions Table */}
       <Card className="bg-[#efe9de] border-[#e6dfd8]">
-        <CardContent className="p-6 space-y-6">
+        <CardContent className="p-4 md:p-6 space-y-6">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             {/* Status Filter Tabs */}
-            <div className="flex items-center gap-1.5 bg-[#f2f0eb] p-1 rounded-xl">
+            <div className="flex items-center gap-1.5 bg-[#faf9f5] p-1 rounded-xl border border-[#e6dfd8]">
               <button
                 type="button"
                 onClick={() => setStatusTab("all")}
-                className={`px-3 py-1.5 text-xs font-bold rounded-lg transition ${
-                  statusTab === "all" ? "bg-white text-[#006241] shadow-2xs" : "text-slate-600 hover:text-slate-900"
+                className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition cursor-pointer ${
+                  statusTab === "all" ? "bg-[#efe9de] text-[#cc785c] font-bold shadow-2xs" : "text-[#6c6a64] hover:text-[#141413]"
                 }`}
               >
                 All Transactions ({allCombinedPayments.length})
@@ -415,33 +389,33 @@ function Payments() {
               <button
                 type="button"
                 onClick={() => setStatusTab("completed")}
-                className={`px-3 py-1.5 text-xs font-bold rounded-lg transition ${
-                  statusTab === "completed" ? "bg-white text-[#00754A] shadow-2xs" : "text-slate-600 hover:text-slate-900"
+                className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition cursor-pointer ${
+                  statusTab === "completed" ? "bg-[#efe9de] text-[#00754A] font-bold shadow-2xs" : "text-[#6c6a64] hover:text-[#141413]"
                 }`}
               >
-                Completed Receipts ({allCombinedPayments.filter(p => p.status === "Completed").length})
+                Completed Receipts ({allCombinedPayments.filter((p) => p.status === "Completed").length})
               </button>
               <button
                 type="button"
                 onClick={() => setStatusTab("pending")}
-                className={`px-3 py-1.5 text-xs font-bold rounded-lg transition ${
-                  statusTab === "pending" ? "bg-white text-[#cba258] shadow-2xs" : "text-slate-600 hover:text-slate-900"
+                className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition cursor-pointer ${
+                  statusTab === "pending" ? "bg-[#efe9de] text-[#cc785c] font-bold shadow-2xs" : "text-[#6c6a64] hover:text-[#141413]"
                 }`}
               >
-                Pending Dues ({allCombinedPayments.filter(p => p.status === "Pending").length})
+                Pending Dues ({allCombinedPayments.filter((p) => p.status === "Pending").length})
               </button>
             </div>
 
             {/* Search Input */}
             <div className="flex items-center gap-2 max-w-md w-full sm:w-auto">
               <div className="relative flex-1">
-                <Search className="absolute left-3.5 top-2.5 h-4 w-4 text-slate-400" />
+                <Search className="absolute left-3.5 top-2.5 h-4 w-4 text-[#8e8b82]" />
                 <Input
                   type="text"
                   placeholder="Search student, txn ID, or course..."
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  className="pl-10 rounded-full bg-[#f2f0eb] border-slate-200 text-xs h-9"
+                  className="pl-10 rounded-xl bg-[#faf9f5] border-[#e6dfd8] text-xs h-9"
                 />
               </div>
             </div>
@@ -450,32 +424,32 @@ function Payments() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="w-28">Txn ID</TableHead>
-                <TableHead>Student Partner</TableHead>
-                <TableHead>Course Track</TableHead>
-                <TableHead>Payment Method</TableHead>
-                <TableHead>Amount</TableHead>
-                <TableHead>Date</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="text-right">Receipt Action</TableHead>
+                <TableHead className="w-28 font-bold">TXN ID</TableHead>
+                <TableHead className="font-bold">Student Partner</TableHead>
+                <TableHead className="font-bold">Course Track</TableHead>
+                <TableHead className="font-bold">Payment Method</TableHead>
+                <TableHead className="font-bold">Amount</TableHead>
+                <TableHead className="font-bold">Date</TableHead>
+                <TableHead className="font-bold">Status</TableHead>
+                <TableHead className="text-right font-bold">Receipt Action</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filteredPayments.map((p) => (
-                <TableRow key={p.id} className={p.status === "Pending" ? "bg-[#faf6ee]/50" : ""}>
-                  <TableCell className="font-mono text-xs font-bold text-[#00754A]">{p.id}</TableCell>
-                  <TableCell className="font-extrabold text-[#1E3932] text-sm">
+                <TableRow key={p.id} className={p.status === "Pending" ? "bg-[#efe9de]/40" : "hover:bg-[#efe9de]/50"}>
+                  <TableCell className="font-mono text-xs font-bold text-[#cc785c]">{p.id}</TableCell>
+                  <TableCell className="font-semibold text-[#141413] text-xs md:text-sm">
                     {p.studentName}
-                    {p.notes && <span className="block text-[11px] text-slate-500 font-normal">{p.notes}</span>}
+                    {p.notes && <span className="block text-[11px] text-[#6c6a64] font-medium">{p.notes}</span>}
                   </TableCell>
-                  <TableCell className="text-slate-700 text-sm font-bold">{p.course || p.courseName}</TableCell>
-                  <TableCell className="text-slate-600 text-sm font-semibold">{p.method || p.paymentMethod}</TableCell>
-                  <TableCell className="font-extrabold text-[#1E3932] text-sm">₹{(p.amount || 0).toLocaleString()}</TableCell>
-                  <TableCell className="text-slate-500 text-sm font-medium">{p.date}</TableCell>
+                  <TableCell className="text-[#141413] text-xs md:text-sm font-semibold">{p.course || p.courseName}</TableCell>
+                  <TableCell className="text-[#6c6a64] text-xs font-semibold">{p.method || p.paymentMethod}</TableCell>
+                  <TableCell className="font-bold text-[#141413] text-xs md:text-sm tracking-tight min-w-[100px]">
+                    ₹{(p.amount || 0).toLocaleString()}
+                  </TableCell>
+                  <TableCell className="text-[#6c6a64] text-xs font-medium whitespace-nowrap">{p.date}</TableCell>
                   <TableCell>
-                    <Badge variant={p.status === "Completed" ? "greenLight" : "warning"}>
-                      {p.status}
-                    </Badge>
+                    <StatusBadge status={p.status} />
                   </TableCell>
                   <TableCell className="text-right">
                     {p.status === "Pending" ? (
@@ -483,7 +457,7 @@ function Payments() {
                         size="xs"
                         variant="stripe"
                         onClick={() => handleLaunchStripeDirect(p)}
-                        className="gap-1 text-xs font-bold px-2.5 py-1 rounded-lg"
+                        className="gap-1 text-xs font-bold px-2.5 py-1 rounded-lg bg-[#635bff] hover:bg-[#534ae4] text-white"
                       >
                         <CreditCard className="h-3.5 w-3.5" /> Pay ₹{(p.amount || 0).toLocaleString()}
                       </Button>
@@ -492,9 +466,9 @@ function Payments() {
                         size="xs"
                         variant="outline"
                         onClick={() => handleOpenReceiptEmail(p)}
-                        className="gap-1 text-xs border-slate-200"
+                        className="gap-1 text-xs border-[#e6dfd8] bg-[#faf9f5] hover:bg-[#efe9de] text-[#141413]"
                       >
-                        <Mail className="h-3.5 w-3.5 text-[#006241]" /> Receipt Email
+                        <Mail className="h-3.5 w-3.5 text-[#cc785c]" /> Receipt Email
                       </Button>
                     )}
                   </TableCell>
@@ -505,60 +479,80 @@ function Payments() {
         </CardContent>
       </Card>
 
-      {/* Modal to record fee receipt */}
-      <Dialog open={openModal} onOpenChange={setOpenModal}>
-        <DialogContent onClose={() => setOpenModal(false)}>
-          <DialogHeader>
-            <DialogTitle>Record Fee Payment Receipt</DialogTitle>
-            <DialogDescription>
-              Add a new fee transaction record for an enrolled student.
-            </DialogDescription>
-          </DialogHeader>
+      {/* Sheet Slide-Over Drawer for Record Fee Receipt */}
+      <Sheet open={openModal} onOpenChange={setOpenModal}>
+        <SheetContent side="right" className="sm:max-w-md" onClose={() => setOpenModal(false)}>
+          <SheetHeader>
+            <SheetTitle>
+              <CreditCard className="h-5 w-5 text-[#cc785c]" />
+              Record Fee Payment Receipt
+              <Sparkles className="h-3.5 w-3.5 text-[#cc785c] fill-current" />
+            </SheetTitle>
+            <SheetDescription>
+              Add a new fee transaction record for an enrolled student partner.
+            </SheetDescription>
+          </SheetHeader>
 
-          <form onSubmit={handleCreatePayment} className="flex flex-col flex-1 overflow-hidden">
-            <DialogBody className="space-y-4">
-              <div className="space-y-1.5">
-                <label className="text-xs font-bold text-[#1E3932] uppercase">Student Partner Name</label>
+          <form onSubmit={handleCreatePayment} className="flex flex-col flex-1 justify-between space-y-4 py-1">
+            <div className="space-y-3">
+              <div className="space-y-1">
+                <label className="text-[11px] font-bold text-[#141413] uppercase tracking-wider flex items-center gap-1.5">
+                  <User className="h-3.5 w-3.5 text-[#cc785c]" /> Student Partner Name
+                </label>
                 <Input
                   type="text"
                   placeholder="e.g. Alex Rivera"
                   value={newPayment.studentName}
                   onChange={(e) => setNewPayment({ ...newPayment, studentName: e.target.value })}
+                  className="bg-white border-[#e6dfd8] rounded-xl text-xs font-semibold"
+                  required
                 />
               </div>
 
-              <div className="space-y-1.5">
-                <label className="text-xs font-bold text-[#1E3932] uppercase">Student Email Address</label>
+              <div className="space-y-1">
+                <label className="text-[11px] font-bold text-[#141413] uppercase tracking-wider flex items-center gap-1.5">
+                  <Mail className="h-3.5 w-3.5 text-[#cc785c]" /> Student Email Address
+                </label>
                 <Input
                   type="email"
                   placeholder="e.g. alex.rivera@tech.org"
                   value={newPayment.studentEmail}
                   onChange={(e) => setNewPayment({ ...newPayment, studentEmail: e.target.value })}
+                  className="bg-white border-[#e6dfd8] rounded-xl text-xs font-semibold"
                 />
               </div>
 
-              <div className="space-y-1.5">
-                <label className="text-xs font-bold text-[#1E3932] uppercase">Course Track</label>
+              <div className="space-y-1">
+                <label className="text-[11px] font-bold text-[#141413] uppercase tracking-wider flex items-center gap-1.5">
+                  <BookOpen className="h-3.5 w-3.5 text-[#cc785c]" /> Course Track
+                </label>
                 <Input
                   type="text"
                   placeholder="e.g. Java Full Stack"
                   value={newPayment.course}
                   onChange={(e) => setNewPayment({ ...newPayment, course: e.target.value })}
+                  className="bg-white border-[#e6dfd8] rounded-xl text-xs font-semibold"
                 />
               </div>
 
-              <div className="space-y-1.5">
-                <label className="text-xs font-bold text-[#1E3932] uppercase">Amount Paid (INR)</label>
+              <div className="space-y-1">
+                <label className="text-[11px] font-bold text-[#141413] uppercase tracking-wider flex items-center gap-1.5">
+                  <DollarSign className="h-3.5 w-3.5 text-[#cc785c]" /> Amount Paid (INR)
+                </label>
                 <Input
                   type="number"
                   placeholder="e.g. 25000"
                   value={newPayment.amount}
                   onChange={(e) => setNewPayment({ ...newPayment, amount: e.target.value })}
+                  className="bg-white border-[#e6dfd8] rounded-xl text-xs font-semibold"
+                  required
                 />
               </div>
 
-              <div className="space-y-1.5">
-                <label className="text-xs font-bold text-[#1E3932] uppercase">Payment Mode</label>
+              <div className="space-y-1">
+                <label className="text-[11px] font-bold text-[#141413] uppercase tracking-wider flex items-center gap-1.5">
+                  Payment Mode
+                </label>
                 <Select
                   value={newPayment.method}
                   onChange={(e) => setNewPayment({ ...newPayment, method: e.target.value })}
@@ -569,19 +563,19 @@ function Payments() {
                   <option value="Cash Deposit">Cash Deposit</option>
                 </Select>
               </div>
-            </DialogBody>
+            </div>
 
-            <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setOpenModal(false)}>
+            <SheetFooter>
+              <Button type="button" variant="outline" onClick={() => setOpenModal(false)} className="border-[#e6dfd8] bg-[#faf9f5]">
                 Cancel
               </Button>
-              <Button type="submit" variant="primary" className="shadow-md">
+              <Button type="submit" variant="primary" className="bg-[#cc785c] hover:bg-[#a9583e] text-white shadow-md font-bold">
                 Generate Receipt & Auto-Email
               </Button>
-            </DialogFooter>
+            </SheetFooter>
           </form>
-        </DialogContent>
-      </Dialog>
+        </SheetContent>
+      </Sheet>
 
       {/* Email Receipt Preview Modal */}
       {openEmailModal && selectedReceipt && (

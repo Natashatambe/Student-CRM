@@ -6,6 +6,7 @@ import EditAdmissionDialog from "../../Components/admissions/EditAdmissionDialog
 import DeleteAdmissionDialog from "../../Components/admissions/DeleteAdmissionDialog";
 import EmiManagementDialog from "../../Components/admissions/EmiManagementDialog";
 import EmailReceiptModal from "../../Components/common/EmailReceiptModal";
+import PageHeader from "../../Components/common/PageHeader";
 import { Button } from "../../Components/ui/button";
 import { Input } from "../../Components/ui/input";
 import { Card, CardContent } from "../../Components/ui/card";
@@ -309,47 +310,43 @@ function Admissions() {
   return (
     <Layout>
       {/* Page Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
-        <div>
-          <h1 className="text-3xl md:text-4xl font-normal text-[#141413] tracking-tight font-serif-display flex items-center gap-2">
-            <span className="text-[#cc785c] font-bold text-2xl">✱</span>
-            Admissions Desk
-          </h1>
-          <p className="text-sm text-[#6c6a64] font-medium mt-1">
-            Track student enrollments, EMI installment schedules, and fee payment status
-          </p>
-        </div>
+      <PageHeader
+        title="Admissions Desk"
+        description="Track student enrollments, EMI installment schedules, and fee payment status"
+        categoryTag="Admissions Desk"
+        actions={
+          <div className="flex flex-wrap items-center gap-2.5">
+            {admissions.length > 0 && (
+              <Button
+                onClick={handleClearAllAdmissions}
+                variant="outline"
+                size="sm"
+                className="gap-1.5 border-red-200 bg-red-50 text-red-700 hover:bg-red-600 hover:text-white transition"
+                title="Clear all admission records"
+              >
+                <Trash2 className="h-3.5 w-3.5" /> Clear All Admissions
+              </Button>
+            )}
 
-        <div className="flex flex-wrap items-center gap-2.5">
-          {admissions.length > 0 && (
-            <Button
-              onClick={handleClearAllAdmissions}
-              variant="outline"
-              size="sm"
-              className="gap-1.5 border-red-200 bg-red-50 text-red-700 hover:bg-red-600 hover:text-white transition"
-              title="Clear all admission records"
-            >
-              <Trash2 className="h-4 w-4" /> Clear All Admissions
+            <Button onClick={handleExportExcel} variant="outline" size="sm" className="gap-1.5 border-[#e6dfd8] bg-[#faf9f5]">
+              <FileSpreadsheet className="h-3.5 w-3.5 text-[#00754A]" /> Export Excel
             </Button>
-          )}
 
-          <Button onClick={handleExportExcel} variant="outline" size="sm" className="gap-1.5 border-[#e6dfd8] bg-[#faf9f5]">
-            <FileSpreadsheet className="h-4 w-4 text-[#00754A]" /> Export Excel
-          </Button>
+            <Button onClick={handleExportPDF} variant="outline" size="sm" className="gap-1.5 border-[#e6dfd8] bg-[#faf9f5]">
+              <Download className="h-3.5 w-3.5 text-[#cc785c]" /> Export PDF Sheet
+            </Button>
 
-          <Button onClick={handleExportPDF} variant="outline" size="sm" className="gap-1.5 border-[#e6dfd8] bg-[#faf9f5]">
-            <Download className="h-4 w-4 text-[#cc785c]" /> Export PDF Sheet
-          </Button>
-
-          <Button
-            onClick={() => setShowAddDialog(true)}
-            variant="primary"
-            className="shadow-xs gap-2 bg-[#cc785c] hover:bg-[#a9583e]"
-          >
-            <Plus className="h-4 w-4" /> New Admission Entry
-          </Button>
-        </div>
-      </div>
+            <Button
+              onClick={() => setShowAddDialog(true)}
+              variant="primary"
+              size="sm"
+              className="shadow-xs gap-1.5 bg-[#cc785c] hover:bg-[#a9583e]"
+            >
+              <Plus className="h-3.5 w-3.5" /> New Admission Entry
+            </Button>
+          </div>
+        }
+      />
 
       {/* Main Table Card */}
       <Card className="bg-[#efe9de] border-[#e6dfd8]">
