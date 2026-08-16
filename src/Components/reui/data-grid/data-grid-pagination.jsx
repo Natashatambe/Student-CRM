@@ -2,13 +2,6 @@ import { useDataGrid } from "@/Components/reui/data-grid/data-grid"
 
 import { cn } from "@/lib/utils"
 import { Button } from "@/Components/ui/button"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/Components/ui/select"
 import { Skeleton } from "@/Components/ui/skeleton"
 import { ChevronLeftIcon, ChevronRightIcon } from "lucide-react"
 
@@ -123,26 +116,18 @@ function DataGridPagination(props) {
             <div className="text-muted-foreground text-sm">
               {mergedProps.rowsPerPageLabel}
             </div>
-            <Select
+            <select
               value={`${pageSize}`}
-              onValueChange={(value) => {
-                const newPageSize = Number(value)
+              onChange={(e) => {
+                const newPageSize = Number(e.target.value)
                 table.setPageSize(newPageSize)
-              }}>
-              <SelectTrigger className="w-16" size="sm">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent
-                align="start"
-                alignItemWithTrigger={false}
-                className="min-w-(--anchor-width)">
-                {mergedProps.sizes?.map((size) => (
-                  <SelectItem key={size} value={`${size}`}>
-                    {size}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              }}
+              className="h-8 w-20 rounded-md border border-input bg-background px-2 py-1 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-ring cursor-pointer"
+            >
+              {(mergedProps.sizes || []).map((size) => (
+                <option key={size} value={`${size}`}>{size}</option>
+              ))}
+            </select>
           </>
         )}
       </div>

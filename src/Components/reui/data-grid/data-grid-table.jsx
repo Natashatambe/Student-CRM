@@ -877,8 +877,8 @@ function DataGridTableHeadRowCellResize(
           // column showing a resize cursor and no indicator at all.
           props.tableLayout?.columnsPinnable
             ? "before:hidden"
-            : "before:absolute before:inset-y-0 before:end-0 before:w-px before:bg-border")
-              : "-end-2 w-5 justify-center before:absolute before:inset-y-0 before:w-px before:-translate-x-px before:bg-border",
+            : "before:absolute before:inset-y-0 before:end-0 before:w-px before:bg-[#e6dfd8]")
+              : "-end-2 w-5 justify-center before:absolute before:inset-y-0 before:w-px before:-translate-x-px before:bg-[#e6dfd8]",
           column.getIsResizing() &&
             (isResizeModeOnEnd
               ? "opacity-100"

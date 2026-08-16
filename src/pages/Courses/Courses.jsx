@@ -6,7 +6,7 @@ import AddCourseDialog from "../../Components/courses/AddCourseDialog";
 import EditCourseDialog from "../../Components/courses/EditCourseDialog";
 import DeleteCourseDialog from "../../Components/courses/DeleteCourseDialog";
 import PageHeader from "../../Components/common/PageHeader";
-import Pagination from "../../Components/common/Pagination";
+
 import { Button } from "../../Components/ui/button";
 import { Input } from "../../Components/ui/input";
 import { Card, CardContent } from "../../Components/ui/card";
@@ -39,8 +39,6 @@ function Courses() {
   const [courseToDelete, setCourseToDelete] = useState(null);
   const [search, setSearch] = useState("");
 
-  const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
 
   const loadCoursesFromBackend = async () => {
     try {
@@ -79,9 +77,6 @@ function Courses() {
     if (q) setSearch(q);
   }, []);
 
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [search]);
 
   const handleAddCourse = async (newCourse) => {
     const numFees = Number(String(newCourse.fees).replace(/[^0-9]/g, "")) || 0;
@@ -213,9 +208,6 @@ function Courses() {
     );
   });
 
-  const totalElements = filteredCourses.length;
-  const totalPages = Math.ceil(totalElements / pageSize) || 1;
-  const paginatedCourses = filteredCourses.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   return (
     <Layout>
@@ -279,21 +271,9 @@ function Courses() {
           </div>
 
           <CourseTable
-            courses={paginatedCourses}
+            courses={filteredCourses}
             onEdit={handleEditClick}
             onDelete={handleDeleteClick}
-          />
-
-          <Pagination
-            currentPage={currentPage}
-            totalPages={totalPages}
-            pageSize={pageSize}
-            totalElements={totalElements}
-            onPageChange={setCurrentPage}
-            onPageSizeChange={(newSize) => {
-              setPageSize(newSize);
-              setCurrentPage(1);
-            }}
           />
         </CardContent>
       </Card>

@@ -1,123 +1,87 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useMemo, useState, useEffect, useRef } from "react";
 import {
-  Pencil,
-  Trash2,
-  Mail,
-  Phone,
-  MapPin,
-  Sparkles,
-  GraduationCap,
-  Calendar,
-  ChevronDown,
-  Check,
-  Eye,
-  CreditCard,
-  Building,
+  Pencil, Trash2, Mail, Phone, MapPin, Sparkles, GraduationCap,
+  Calendar, ChevronDown, Check, Eye, MoreVertical,
 } from "lucide-react";
-import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from "../ui/table";
-import { Badge } from "../ui/badge";
-import { Avatar, AvatarImage, AvatarFallback } from "../ui/avatar";
-import { Button } from "../ui/button";
-import { cn, normalizeStatus } from "../../lib/utils";
-import StatusBadge from "../common/StatusBadge";
+import { useTable } from "@tanstack/react-table";
+import { dataGridFeatures, DataGrid, DataGridContainer } from "@/Components/reui/data-grid/data-grid";
+import { DataGridScrollArea } from "@/Components/reui/data-grid/data-grid-scroll-area";
+import { DataGridTable } from "@/Components/reui/data-grid/data-grid-table";
+import { DataGridColumnHeader } from "@/Components/reui/data-grid/data-grid-column-header";
+import { DataGridPagination } from "@/Components/reui/data-grid/data-grid-pagination";
+import { Avatar, AvatarImage, AvatarFallback } from "@/Components/ui/avatar";
+import { Button } from "@/Components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+} from "@/Components/ui/dropdown-menu";
+import { cn, normalizeStatus } from "@/lib/utils";
+import StatusBadge from "@/Components/common/StatusBadge";
 
-const formatDateWithSpace = (rawDate) => {
+/* ─── helpers ─── */
+const formatDate = (rawDate) => {
   if (!rawDate) return "N/A";
   const str = String(rawDate).trim();
-  if (str.includes("T") || str.includes(" ")) {
-    const parts = str.split(/[T ]/);
-    const datePart = parts[0];
-    let timePart = parts[1] ? parts[1].slice(0, 5) : "";
-    if (timePart) {
-      return `${datePart}   •   ${timePart}`;
-    }
-    return datePart;
-  }
-  return str;
+  return str.includes("T") ? str.split("T")[0] : str.split(" ")[0];
 };
 
-const StatusBadgeButton = ({ status, onSelect }) => {
-  const currentStatus = normalizeStatus(status);
+/* ─── Status pill with dropdown ─── */
+const StatusPill = ({ status, onSelect }) => {
+  const current = normalizeStatus(status);
   const [open, setOpen] = useState(false);
-  const dropdownRef = useRef(null);
+  const ref = useRef(null);
 
   useEffect(() => {
-    const handleClickOutside = (e) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
-        setOpen(false);
-      }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+    const h = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+    document.addEventListener("mousedown", h);
+    return () => document.removeEventListener("mousedown", h);
   }, []);
 
-  const getStatusStyles = (st) => {
-    switch (st) {
-      case "Active":
-        return "bg-[#d4e9e2] text-[#00754A] border-[#a3d9c9] hover:bg-[#b8e2d4]";
-      case "Pending":
-        return "bg-[#efe9de] text-[#cc785c] border-[#e6dfd8] hover:bg-[#e8e0d2]";
-      case "Enquiry":
-        return "bg-[#faf9f5] text-[#141413] border-[#e6dfd8] hover:bg-[#efe9de]";
-      default:
-        return "bg-[#fde8e8] text-[#c64545] border-[#fbd5d5] hover:bg-[#fbd5d5]";
-    }
+  const cfg = {
+    Active:   { pill: "bg-[#d0ede3] text-[#00754A] border-[#b0dbc9]", dot: "bg-[#00754A]" },
+    Pending:  { pill: "bg-[#fef3ec] text-[#cc785c] border-[#f5d8c5]", dot: "bg-[#cc785c]" },
+    Enquiry:  { pill: "bg-[#f5f4f1] text-[#6c6a64] border-[#e6dfd8]", dot: "bg-[#8e8b82]" },
+    Inactive: { pill: "bg-[#fde8e8] text-[#c64545] border-[#fbd5d5]", dot: "bg-[#c64545]" },
   };
+  const { pill, dot } = cfg[current] || cfg.Inactive;
 
-  const getDotColor = (st) => {
-    switch (st) {
-      case "Active":
-        return "bg-[#00754A]";
-      case "Pending":
-        return "bg-[#cc785c]";
-      case "Enquiry":
-        return "bg-[#141413]";
-      default:
-        return "bg-[#c64545]";
-    }
-  };
+  const statuses = ["Active", "Pending", "Enquiry", "Inactive"];
 
   return (
-    <div ref={dropdownRef} className="relative inline-block text-left">
+    <div ref={ref} className="relative inline-block">
       <button
         type="button"
-        onClick={() => setOpen(!open)}
+        onClick={() => setOpen((v) => !v)}
         className={cn(
-          "inline-flex items-center gap-1.5 text-[11px] font-bold px-3 py-1 rounded-full border transition-all duration-150 shadow-xs cursor-pointer select-none active:scale-95",
-          getStatusStyles(currentStatus)
+          "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-[11px] font-bold cursor-pointer select-none transition-all active:scale-95",
+          pill
         )}
-        title="Click to change partner status"
       >
-        <span className={cn("h-1.5 w-1.5 rounded-full animate-pulse", getDotColor(currentStatus))} />
-        <span>{currentStatus}</span>
-        <ChevronDown className="h-3 w-3 opacity-70 shrink-0" />
+        <span className={cn("h-1.5 w-1.5 rounded-full", dot)} />
+        {current}
+        <ChevronDown className="h-3 w-3 opacity-60" />
       </button>
 
       {open && (
-        <div className="absolute left-0 sm:left-auto sm:right-0 mt-1.5 z-50 min-w-[140px] rounded-xl bg-[#faf9f5] border border-[#e6dfd8] p-1.5 shadow-xl animate-in fade-in-80 zoom-in-95">
-          {[
-            { label: "Active", desc: "Enrolled & Active" },
-            { label: "Pending", desc: "On Hold Approval" },
-            { label: "Enquiry", desc: "Lead Prospect" },
-            { label: "Inactive", desc: "Deactivated" },
-          ].map((item) => (
+        <div className="absolute left-0 mt-1 z-50 min-w-[130px] rounded-xl bg-white border border-[#e6dfd8] p-1 shadow-xl animate-in fade-in-0 zoom-in-95">
+          {statuses.map((s) => (
             <button
-              key={item.label}
+              key={s}
               type="button"
-              onClick={() => {
-                onSelect(item.label);
-                setOpen(false);
-              }}
+              onClick={() => { onSelect?.(s); setOpen(false); }}
               className={cn(
-                "w-full text-left px-2.5 py-1.5 rounded-lg text-xs font-semibold flex items-center justify-between hover:bg-[#efe9de] transition cursor-pointer",
-                currentStatus === item.label ? "bg-[#efe9de] text-[#cc785c]" : "text-[#141413]"
+                "w-full flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-lg text-xs font-semibold hover:bg-[#efe9de] transition cursor-pointer",
+                current === s ? "text-[#cc785c]" : "text-[#141413]"
               )}
             >
               <div className="flex items-center gap-1.5">
-                <span className={cn("h-1.5 w-1.5 rounded-full", getDotColor(item.label))} />
-                <span>{item.label}</span>
+                <span className={cn("h-1.5 w-1.5 rounded-full", cfg[s]?.dot)} />
+                {s}
               </div>
-              {currentStatus === item.label && <Check className="h-3.5 w-3.5 text-[#cc785c]" />}
+              {current === s && <Check className="h-3 w-3 text-[#cc785c]" />}
             </button>
           ))}
         </div>
@@ -126,362 +90,290 @@ const StatusBadgeButton = ({ status, onSelect }) => {
   );
 };
 
+/* ─── Main Component ─── */
 function StudentTable({ students = [], onEdit, onDelete, onView, onStatusChange }) {
+  const columns = useMemo(() => [
+    /* STU ID */
+    {
+      id: "studentId",
+      accessorKey: "formattedId",
+      header: ({ column }) => <DataGridColumnHeader column={column} title="STU ID" />,
+      size: 95,
+      cell: ({ row }) => (
+        <span className="font-mono text-xs font-bold text-[#cc785c]">
+          {row.original.formattedId || `STU-${101 + row.index}`}
+        </span>
+      ),
+    },
+
+    /* Student Partner & Contact */
+    {
+      id: "student",
+      accessorFn: (r) => r.name || `${r.firstName || ""} ${r.lastName || ""}`.trim(),
+      header: ({ column }) => <DataGridColumnHeader column={column} title="Student Partner & Contact" />,
+      size: 280,
+      cell: ({ row }) => {
+        const s = row.original;
+        const name = s.name || `${s.firstName || ""} ${s.lastName || ""}`.trim() || "Student Partner";
+        const initials = name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase();
+        const avatar = `https://api.dicebear.com/10.x/glyphs/svg?seed=${encodeURIComponent(name)}`;
+        const isActive = normalizeStatus(s.status) === "Active";
+        return (
+          <div className="flex items-start gap-2.5 py-0.5">
+            <Avatar className="h-9 w-9 ring-1 ring-[#cc785c]/30 shrink-0 mt-0.5">
+              <AvatarImage src={avatar} alt={name} />
+              <AvatarFallback className="bg-[#cc785c] text-white text-xs font-bold">{initials}</AvatarFallback>
+            </Avatar>
+            <div className="min-w-0">
+              <p
+                onClick={() => onView?.(s)}
+                className="font-medium text-sm text-[#141413] hover:text-[#cc785c] cursor-pointer flex items-center gap-1 truncate leading-snug transition-colors"
+              >
+                {name}
+                {isActive && <Sparkles className="h-3 w-3 text-[#cc785c] fill-current shrink-0" />}
+              </p>
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 mt-0.5 text-[11px] text-[#6c6a64]">
+                {s.email && (
+                  <span className="flex items-center gap-1 min-w-0">
+                    <Mail className="h-3 w-3 text-[#cc785c] shrink-0" />
+                    <span className="truncate max-w-[150px]">{s.email}</span>
+                  </span>
+                )}
+                {s.phone && (
+                  <span className="flex items-center gap-1">
+                    <Phone className="h-3 w-3 text-[#cc785c] shrink-0" />
+                    {s.phone}
+                  </span>
+                )}
+                {s.gender && <span className="text-[#aaa99f] font-semibold text-[10px]">• {s.gender}</span>}
+              </div>
+              {s.address && (
+                <div className="flex items-center gap-1 mt-0.5 text-[11px] text-[#8e8b82]">
+                  <MapPin className="h-3 w-3 text-[#cc785c] shrink-0" />
+                  <span className="truncate max-w-[200px]">{s.address}</span>
+                </div>
+              )}
+            </div>
+          </div>
+        );
+      },
+    },
+
+    /* Course Track */
+    {
+      id: "course",
+      accessorFn: (r) => r.course || r.courseName || "Java Full Stack",
+      header: ({ column }) => <DataGridColumnHeader column={column} title="Course Track" />,
+      size: 170,
+      cell: ({ getValue }) => (
+        <div className="inline-flex items-center gap-1.5 bg-[#efe9de] text-[#141413] px-2.5 py-1 rounded-md text-[11px] font-semibold border border-[#e6dfd8]">
+          <GraduationCap className="h-3.5 w-3.5 text-[#cc785c] shrink-0" />
+          <span className="truncate max-w-[120px]">{getValue()}</span>
+        </div>
+      ),
+    },
+
+    /* Admission & Fee Data */
+    {
+      id: "admission",
+      header: "Admission & Fee Data",
+      size: 200,
+      enableSorting: false,
+      cell: ({ row }) => {
+        const s = row.original;
+        const idx = row.index;
+        const st = normalizeStatus(s.status);
+        const isActive = st === "Active";
+        const feeNum = Number(s.totalFee || s.fees || 50000);
+        const payStatus = s.paymentStatus || (isActive ? "Paid" : "Pending");
+        const admDate = s.admissionDate || s.admission?.admissionDate;
+        return isActive || s.totalFee || s.admissionDate ? (
+          <div className="space-y-1 text-xs">
+            <div className="flex items-center gap-2">
+              <span className="font-mono text-[11px] font-bold text-[#cc785c] bg-[#faf9f5] border border-[#e6dfd8] px-1.5 py-px rounded">
+                #{101 + idx}
+              </span>
+              <span className="font-bold text-[#141413] tracking-tight">₹{feeNum.toLocaleString()}</span>
+            </div>
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <StatusBadge status={payStatus} />
+              {admDate && (
+                <span className="flex items-center gap-1 text-[10px] text-[#6c6a64] font-mono bg-[#efe9de] px-1.5 py-px rounded border border-[#e6dfd8]">
+                  <Calendar className="h-3 w-3 text-[#cc785c] shrink-0" />
+                  {formatDate(admDate)}
+                </span>
+              )}
+            </div>
+          </div>
+        ) : (
+          <span className="text-[11px] text-[#8e8b82] italic">No Admission Yet</span>
+        );
+      },
+    },
+
+    /* Status */
+    {
+      id: "status",
+      accessorFn: (r) => normalizeStatus(r.status),
+      header: ({ column }) => <DataGridColumnHeader column={column} title="Status" />,
+      size: 115,
+      cell: ({ row }) => {
+        const s = row.original;
+        return (
+          <StatusPill
+            status={s.status}
+            onSelect={(ns) => {
+              if (onStatusChange) onStatusChange(s, ns);
+              else onEdit?.({ ...s, status: ns });
+            }}
+          />
+        );
+      },
+    },
+
+    /* Actions — pencil icon + three-dot menu (matches target image) */
+    {
+      id: "actions",
+      header: "Actions",
+      size: 80,
+      enableSorting: false,
+      cell: ({ row }) => {
+        const s = row.original;
+        return (
+          <div className="flex items-center justify-end gap-1">
+            {/* Pencil / Edit icon button */}
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              onClick={(e) => { e.stopPropagation(); onEdit?.(s); }}
+              className="h-8 w-8 rounded-md text-[#6c6a64] hover:text-[#cc785c] hover:bg-[#efe9de] transition"
+              title="Edit student"
+            >
+              <Pencil className="h-4 w-4" />
+            </Button>
+
+            {/* Three-dot menu */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 rounded-md text-[#6c6a64] hover:text-[#141413] hover:bg-[#efe9de] transition"
+                  title="More options"
+                >
+                  <MoreVertical className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-40 rounded-xl border-[#e6dfd8] bg-white shadow-xl">
+                {onView && (
+                  <DropdownMenuItem onClick={() => onView?.(s)} className="gap-2 cursor-pointer">
+                    <Eye className="h-3.5 w-3.5 text-[#cc785c]" />
+                    <span className="text-xs font-semibold">View Profile</span>
+                  </DropdownMenuItem>
+                )}
+                {onEdit && (
+                  <DropdownMenuItem onClick={() => onEdit?.(s)} className="gap-2 cursor-pointer">
+                    <Pencil className="h-3.5 w-3.5 text-[#cc785c]" />
+                    <span className="text-xs font-semibold">Edit Student</span>
+                  </DropdownMenuItem>
+                )}
+                {(onView || onEdit) && onDelete && <DropdownMenuSeparator />}
+                {onDelete && (
+                  <DropdownMenuItem
+                    onClick={() => onDelete?.(s)}
+                    className="gap-2 cursor-pointer text-red-600 focus:text-red-600 focus:bg-red-50"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                    <span className="text-xs font-semibold">Delete</span>
+                  </DropdownMenuItem>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        );
+      },
+    },
+  ], [onView, onEdit, onDelete, onStatusChange]);
+
+  const table = useTable({
+    features: dataGridFeatures,
+    data: students,
+    columns,
+    initialState: { pagination: { pageSize: 10, pageIndex: 0 } },
+    getRowId: (row, idx) => String(row.id || row.studentId || idx),
+  });
+
+  /* ── Empty State ── */
   if (students.length === 0) {
     return (
-      <div className="w-full rounded-xl border border-[#e6dfd8] bg-[#faf9f5] p-12 text-center text-[#6c6a64] font-medium">
-        No student records found matching your search.
+      <div className="w-full rounded-xl border border-[#e6dfd8] bg-[#faf9f5] py-14 text-center">
+        <GraduationCap className="h-8 w-8 text-[#cc785c]/40 mx-auto mb-3" />
+        <p className="text-sm font-medium text-[#6c6a64]">No student records found matching your search.</p>
       </div>
     );
   }
 
   return (
-    <div className="w-full space-y-4">
-      {/* MOBILE CARD VIEW (< 768px) */}
+    <div className="w-full space-y-3">
+      {/* ── Mobile card view (< md) ── */}
       <div className="block md:hidden space-y-3">
-        {students.map((student, index) => {
-          const displayName = student.name
-            ? student.name
-            : `${student.firstName || ""} ${student.lastName || ""}`.trim() || "Student Partner";
-
-          const initials = displayName
-            .split(" ")
-            .map((n) => n[0])
-            .join("")
-            .slice(0, 2)
-            .toUpperCase();
-
-          const dicebearAvatar = `https://api.dicebear.com/10.x/glyphs/svg?seed=${encodeURIComponent(displayName)}`;
-          const formattedStudentId = student.formattedId || `STU-${101 + index}`;
-          const currentCourseName = student.course || student.courseName || "Java Full Stack";
-          const currentStatus = normalizeStatus(student.status);
-
-          const feeVal = Number(student.totalFee || student.fees || 0);
-
+        {students.map((s, i) => {
+          const name = s.name || `${s.firstName || ""} ${s.lastName || ""}`.trim() || "Student";
+          const initials = name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase();
+          const avatar = `https://api.dicebear.com/10.x/glyphs/svg?seed=${encodeURIComponent(name)}`;
+          const st = normalizeStatus(s.status);
+          const feeVal = Number(s.totalFee || s.fees || 0);
           return (
-            <div
-              key={student.id || index}
-              className="bg-[#faf9f5] border border-[#e6dfd8] rounded-xl p-4 space-y-3 shadow-xs hover:border-[#cc785c]/50 transition"
-            >
-              {/* Header: Avatar, Name, ID & Status */}
+            <div key={s.id || i} className="bg-white border border-[#e6dfd8] rounded-xl p-4 space-y-3 shadow-sm hover:border-[#cc785c]/40 transition">
               <div className="flex items-start justify-between gap-2">
                 <div className="flex items-center gap-3">
-                  <Avatar className="h-10 w-10 ring-1 ring-[#cc785c]/40 bg-[#efe9de] shrink-0">
-                    <AvatarImage src={dicebearAvatar} alt={displayName} />
-                    <AvatarFallback className="bg-[#cc785c] text-white font-bold text-xs">
-                      {initials}
-                    </AvatarFallback>
+                  <Avatar className="h-10 w-10 ring-1 ring-[#cc785c]/30 shrink-0">
+                    <AvatarImage src={avatar} alt={name} />
+                    <AvatarFallback className="bg-[#cc785c] text-white font-bold text-xs">{initials}</AvatarFallback>
                   </Avatar>
                   <div>
-                    <h4
-                      onClick={() => onView && onView(student)}
-                      className="font-serif-display font-bold text-base text-[#141413] hover:text-[#cc785c] cursor-pointer flex items-center gap-1"
-                    >
-                      {displayName}
-                      {currentStatus === "Active" && (
-                        <Sparkles className="h-3.5 w-3.5 text-[#cc785c] fill-current shrink-0" />
-                      )}
-                    </h4>
-                    <span className="font-mono text-xs font-bold text-[#cc785c]">
-                      {formattedStudentId}
-                    </span>
+                    <p onClick={() => onView?.(s)} className="font-semibold text-sm text-[#141413] hover:text-[#cc785c] cursor-pointer">
+                      {name}
+                    </p>
+                    <p className="font-mono text-xs text-[#cc785c] font-bold">{s.formattedId || `STU-${101 + i}`}</p>
                   </div>
                 </div>
-
-                <StatusBadgeButton
-                  status={currentStatus}
-                  onSelect={(newStatus) => {
-                    if (onStatusChange) onStatusChange(student, newStatus);
-                    else if (onEdit) onEdit({ ...student, status: newStatus });
-                  }}
-                />
+                <StatusPill status={st} onSelect={(ns) => { if (onStatusChange) onStatusChange(s, ns); else onEdit?.({ ...s, status: ns }); }} />
               </div>
-
-              {/* Course & Fee Banner */}
-              <div className="flex items-center justify-between gap-2 bg-[#efe9de] p-2.5 rounded-lg border border-[#e6dfd8] text-xs">
-                <div className="flex items-center gap-1.5 text-[#141413] font-semibold">
-                  <GraduationCap className="h-4 w-4 text-[#cc785c]" />
-                  <span>{currentCourseName}</span>
-                </div>
-                {feeVal > 0 && (
-                  <span className="font-serif-display font-bold text-[#141413] bg-[#faf9f5] px-2 py-0.5 rounded border border-[#e6dfd8]">
-                    ₹{feeVal.toLocaleString()}
-                  </span>
-                )}
+              <div className="flex items-center gap-2 text-xs bg-[#efe9de] px-2.5 py-1.5 rounded-lg border border-[#e6dfd8]">
+                <GraduationCap className="h-3.5 w-3.5 text-[#cc785c] shrink-0" />
+                <span className="font-semibold text-[#141413] truncate">{s.course || s.courseName || "Java Full Stack"}</span>
+                {feeVal > 0 && <span className="ml-auto font-bold text-[#141413] shrink-0">₹{feeVal.toLocaleString()}</span>}
               </div>
-
-              {/* Contact Info */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 text-xs text-[#6c6a64]">
-                {student.email && (
-                  <div className="flex items-center gap-1.5 truncate">
-                    <Mail className="h-3.5 w-3.5 text-[#cc785c] shrink-0" />
-                    <span className="truncate">{student.email}</span>
-                  </div>
-                )}
-                {student.phone && (
-                  <div className="flex items-center gap-1.5">
-                    <Phone className="h-3.5 w-3.5 text-[#cc785c] shrink-0" />
-                    <span>{student.phone}</span>
-                  </div>
-                )}
-                {student.address && (
-                  <div className="flex items-center gap-1.5 truncate col-span-full">
-                    <MapPin className="h-3.5 w-3.5 text-[#cc785c] shrink-0" />
-                    <span className="truncate">{student.address}</span>
-                  </div>
-                )}
-              </div>
-
-              {/* Card Actions Footer */}
-              <div className="pt-2 border-t border-[#e6dfd8] flex items-center justify-end gap-2">
-                {onView && (
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => onView(student)}
-                    className="h-8 px-3 text-xs gap-1 border-[#e6dfd8] bg-[#faf9f5]"
-                  >
-                    <Eye className="h-3.5 w-3.5 text-[#cc785c]" /> View
-                  </Button>
-                )}
-                {onEdit && (
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => onEdit(student)}
-                    className="h-8 px-3 text-xs gap-1 border-[#e6dfd8] bg-[#faf9f5] text-[#cc785c]"
-                  >
-                    <Pencil className="h-3.5 w-3.5" /> Edit
-                  </Button>
-                )}
-                {onDelete && (
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => onDelete(student)}
-                    className="h-8 px-3 text-xs gap-1 border-red-200 bg-red-50 text-red-600 hover:bg-red-600 hover:text-white"
-                  >
-                    <Trash2 className="h-3.5 w-3.5" /> Delete
-                  </Button>
-                )}
+              <div className="flex items-center justify-end gap-2 pt-1 border-t border-[#e6dfd8]">
+                {onView && <Button type="button" variant="ghost" size="sm" onClick={() => onView?.(s)} className="h-7 px-2 text-xs gap-1 text-[#6c6a64] hover:bg-[#efe9de]"><Eye className="h-3.5 w-3.5" /> View</Button>}
+                {onEdit && <Button type="button" variant="ghost" size="sm" onClick={() => onEdit?.(s)} className="h-7 px-2 text-xs gap-1 text-[#cc785c] hover:bg-[#efe9de]"><Pencil className="h-3.5 w-3.5" /> Edit</Button>}
+                {onDelete && <Button type="button" variant="ghost" size="sm" onClick={() => onDelete?.(s)} className="h-7 px-2 text-xs gap-1 text-red-600 hover:bg-red-50"><Trash2 className="h-3.5 w-3.5" /> Delete</Button>}
               </div>
             </div>
           );
         })}
       </div>
 
-      {/* DESKTOP TABLE VIEW (>= 768px) */}
-      <div className="hidden md:block w-full overflow-x-auto rounded-xl border border-[#e6dfd8] bg-[#faf9f5] shadow-xs">
-        <Table className="w-full text-xs">
-          <TableHeader>
-            <TableRow className="bg-[#efe9de] text-[#141413]">
-              <TableHead className="w-24 font-bold">STU ID</TableHead>
-              <TableHead className="font-bold">Student Partner & Contact</TableHead>
-              <TableHead className="font-bold">Course Track</TableHead>
-              <TableHead className="font-bold">Admission & Fee Data</TableHead>
-              <TableHead className="w-28 font-bold text-center">Status</TableHead>
-              <TableHead className="w-32 text-right font-bold">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-
-          <TableBody>
-            {students.map((student, index) => {
-              const displayName = student.name
-                ? student.name
-                : `${student.firstName || ""} ${student.lastName || ""}`.trim() || "Student Partner";
-
-              const initials = displayName
-                .split(" ")
-                .map((n) => n[0])
-                .join("")
-                .slice(0, 2)
-                .toUpperCase();
-
-              const dicebearAvatar = `https://api.dicebear.com/10.x/glyphs/svg?seed=${encodeURIComponent(displayName)}`;
-              const formattedStudentId = student.formattedId || `STU-${101 + index}`;
-
-              const currentStatus = normalizeStatus(student.status);
-
-              const admissionData = student.admission || (student.admissionId || student.totalFee || currentStatus === "Active" ? {
-                admissionId: student.admissionId || student.id || student.studentId,
-                admissionDate: student.admissionDate,
-                totalFee: student.totalFee || student.fees || 50000,
-                paymentStatus: student.paymentStatus || "Pending",
-                paymentType: student.paymentType || "Full",
-              } : null);
-
-              const hasAdmission = Boolean(admissionData || currentStatus === "Active");
-              const admIdStr = hasAdmission ? `#${101 + index}` : null;
-              const admDateStr = hasAdmission ? (admissionData?.admissionDate || student.admissionDate || student.admission?.admissionDate || "Enrolled") : null;
-              const feeNum = hasAdmission ? Number(admissionData?.totalFee || student.totalFee || student.fees || 50000) : 0;
-              const payStatus = hasAdmission ? (student.paymentStatus || admissionData?.paymentStatus || student.admission?.paymentStatus || (student.paymentType === "EMI" ? "Partial" : (currentStatus === "Active" ? "Paid" : "Pending"))) : null;
-              const currentCourseName = student.course || student.courseName || "Java Full Stack";
-
-              return (
-                <TableRow key={student.id || index} className="hover:bg-[#efe9de]/50 transition-colors">
-                  {/* Sequencewise ID */}
-                  <TableCell className="font-mono text-xs font-bold text-[#cc785c] py-3.5 px-3 align-top whitespace-nowrap">
-                    {formattedStudentId}
-                  </TableCell>
-
-                  {/* Student Partner & Contact Info */}
-                  <TableCell className="py-3.5 px-3 align-top">
-                    <div className="flex items-start gap-2.5">
-                      <Avatar className="h-8 w-8 ring-1 ring-[#cc785c]/40 bg-[#efe9de] shrink-0 mt-0.5">
-                        <AvatarImage src={dicebearAvatar} alt={displayName} />
-                        <AvatarFallback className="bg-[#cc785c] text-white font-medium text-xs">
-                          {initials}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="min-w-0 space-y-1">
-                        <h4
-                          onClick={() => onView && onView(student)}
-                          className="font-serif-display font-medium text-sm text-[#141413] hover:text-[#cc785c] cursor-pointer flex items-center gap-1 leading-snug truncate transition"
-                        >
-                          {displayName}
-                          {currentStatus === "Active" && (
-                            <Sparkles className="h-3 w-3 text-[#cc785c] fill-current shrink-0" />
-                          )}
-                        </h4>
-                        <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[11px] text-[#6c6a64]">
-                          {student.email && (
-                            <span className="flex items-center gap-1 truncate">
-                              <Mail className="h-3 w-3 text-[#cc785c] shrink-0" />
-                              <span className="truncate max-w-[160px]">{student.email}</span>
-                            </span>
-                          )}
-                          {student.phone && (
-                            <span className="flex items-center gap-1">
-                              <Phone className="h-3 w-3 text-[#cc785c] shrink-0" />
-                              {student.phone}
-                            </span>
-                          )}
-                          {student.gender && (
-                            <span className="text-[#8e8b82] font-semibold uppercase text-[10px]">
-                              • {student.gender}
-                            </span>
-                          )}
-                        </div>
-                        {student.address && (
-                          <div className="flex items-center gap-1 text-[11px] text-[#8e8b82] truncate">
-                            <MapPin className="h-3 w-3 text-[#cc785c] shrink-0" />
-                            <span className="truncate max-w-[220px]">{student.address}</span>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </TableCell>
-
-                  {/* Course Track */}
-                  <TableCell className="font-medium text-[#141413] text-xs py-3.5 px-3 align-top whitespace-nowrap">
-                    <div className="inline-flex items-center gap-1.5 bg-[#efe9de] text-[#141413] px-2.5 py-1 rounded-md text-[11px] font-semibold border border-[#e6dfd8] shadow-xs">
-                      <GraduationCap className="h-3.5 w-3.5 text-[#cc785c]" />
-                      <span>{currentCourseName}</span>
-                    </div>
-                  </TableCell>
-
-                  {/* Admission Data */}
-                  <TableCell className="py-3.5 px-4 align-top min-w-[180px]">
-                    {hasAdmission ? (
-                      <div className="space-y-1.5 text-xs">
-                        <div className="flex items-center gap-2">
-                          <span className="font-mono font-bold text-[#cc785c] text-[11px] bg-[#faf9f5] border border-[#e6dfd8] px-1.5 py-0.5 rounded-md shadow-2xs">
-                            {admIdStr}
-                          </span>
-                          <span className="font-bold text-[#141413] text-xs md:text-sm tracking-tight">
-                            ₹{feeNum.toLocaleString()}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-1.5 flex-wrap">
-                          <StatusBadge status={payStatus} />
-                          <span className="text-[10px] font-mono text-[#6c6a64] flex items-center gap-1 bg-[#efe9de] px-1.5 py-0.5 rounded-md border border-[#e6dfd8]">
-                            <Calendar className="h-3 w-3 text-[#cc785c] shrink-0" />
-                            {formatDateWithSpace(admDateStr)}
-                          </span>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="text-[11px] text-[#8e8b82] italic">
-                        Enquiry Prospect (No Admission Yet)
-                      </div>
-                    )}
-                  </TableCell>
-
-                  {/* Status Badge Button */}
-                  <TableCell className="py-3.5 px-3 text-center align-top whitespace-nowrap">
-                    <StatusBadgeButton
-                      status={currentStatus}
-                      onSelect={(newStatus) => {
-                        if (onStatusChange) {
-                          onStatusChange(student, newStatus);
-                        } else if (onEdit) {
-                          onEdit({ ...student, status: newStatus });
-                        }
-                      }}
-                    />
-                  </TableCell>
-
-                  {/* Actions Column */}
-                  <TableCell className="text-right py-3.5 px-3 align-top whitespace-nowrap">
-                    <div className="flex items-center justify-end gap-1">
-                      {onView && (
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onView(student);
-                          }}
-                          title="View Details"
-                          className="h-7 px-2 rounded-lg text-xs font-semibold text-[#141413] bg-[#efe9de] hover:bg-[#e6dfd8] transition cursor-pointer gap-1 shadow-xs border border-[#e6dfd8]"
-                        >
-                          <Eye className="h-3.5 w-3.5 text-[#cc785c]" />
-                          <span>View</span>
-                        </Button>
-                      )}
-                      {onEdit && (
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onEdit(student);
-                          }}
-                          title="Edit Student Partner Details"
-                          className="h-7 px-2 rounded-lg text-xs font-semibold text-[#cc785c] bg-[#efe9de] hover:bg-[#a9583e] hover:text-white transition cursor-pointer gap-1 shadow-xs border border-[#e6dfd8]"
-                        >
-                          <Pencil className="h-3.5 w-3.5" />
-                          <span>Edit</span>
-                        </Button>
-                      )}
-                      {onDelete && (
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onDelete(student);
-                          }}
-                          title="Delete Student Record"
-                          className="h-7 px-2 rounded-lg text-xs font-semibold text-red-600 bg-red-50 hover:bg-red-600 hover:text-white transition cursor-pointer gap-1 shadow-xs border border-red-200"
-                        >
-                          <Trash2 className="h-3.5 w-3.5" />
-                          <span>Delete</span>
-                        </Button>
-                      )}
-                    </div>
-                  </TableCell>
-                </TableRow>
-              );
-            })}
-          </TableBody>
-        </Table>
+      {/* ── Desktop ReUI DataGrid ── */}
+      <div className="hidden md:block w-full rounded-xl border border-[#e6dfd8] bg-white shadow-sm overflow-hidden">
+        <DataGrid
+          table={table}
+          recordCount={students.length}
+          tableLayout={{ rowBorder: true, headerBackground: true }}
+          tableClassNames={{ base: "text-xs" }}
+        >
+          <DataGridContainer>
+            <DataGridScrollArea>
+              <DataGridTable />
+            </DataGridScrollArea>
+            <div className="border-t border-[#e6dfd8] px-4 py-2 bg-[#faf9f5]">
+              <DataGridPagination />
+            </div>
+          </DataGridContainer>
+        </DataGrid>
       </div>
     </div>
   );

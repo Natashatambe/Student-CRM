@@ -7,7 +7,7 @@ import DeleteAdmissionDialog from "../../Components/admissions/DeleteAdmissionDi
 import EmiManagementDialog from "../../Components/admissions/EmiManagementDialog";
 import EmailReceiptModal from "../../Components/common/EmailReceiptModal";
 import PageHeader from "../../Components/common/PageHeader";
-import Pagination from "../../Components/common/Pagination";
+
 import { Button } from "../../Components/ui/button";
 import { Input } from "../../Components/ui/input";
 import { Card, CardContent } from "../../Components/ui/card";
@@ -45,8 +45,6 @@ function Admissions() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
 
-  const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
 
   const loadAdmissionsFromBackend = async () => {
     try {
@@ -100,9 +98,6 @@ function Admissions() {
     if (q) setSearch(q);
   }, []);
 
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [search, statusFilter]);
 
   const handleAddSuccess = async (newRecord) => {
     const sId = Number(newRecord.studentId);
@@ -317,9 +312,6 @@ function Admissions() {
     }
   };
 
-  const totalElements = filteredAdmissions.length;
-  const totalPages = Math.ceil(totalElements / pageSize) || 1;
-  const paginatedAdmissions = filteredAdmissions.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   return (
     <Layout>
@@ -409,23 +401,11 @@ function Admissions() {
           </div>
 
           <AdmissionTable
-            admissions={paginatedAdmissions}
+            admissions={filteredAdmissions}
             onEdit={handleEdit}
             onDelete={handleDeleteTrigger}
             onManageEmi={handleManageEmi}
             onViewReceipt={handleViewReceipt}
-          />
-
-          <Pagination
-            currentPage={currentPage}
-            totalPages={totalPages}
-            pageSize={pageSize}
-            totalElements={totalElements}
-            onPageChange={setCurrentPage}
-            onPageSizeChange={(newSize) => {
-              setPageSize(newSize);
-              setCurrentPage(1);
-            }}
           />
         </CardContent>
       </Card>

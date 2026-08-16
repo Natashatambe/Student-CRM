@@ -7,7 +7,7 @@ import DeleteStudentDialog from "../../Components/students/DeleteStudentDialog";
 import ViewStudentDialog from "../../Components/students/ViewStudentDialog";
 import StudentStatsCard from "../../Components/students/StudentStatsCard";
 import PageHeader from "../../Components/common/PageHeader";
-import Pagination from "../../Components/common/Pagination";
+
 import { Button } from "../../Components/ui/button";
 import { Input } from "../../Components/ui/input";
 import { Select } from "../../Components/ui/select";
@@ -52,8 +52,6 @@ function Students() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [courseFilter, setCourseFilter] = useState("all");
 
-  const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
 
   const loadStudentsFromBackend = async () => {
     try {
@@ -83,9 +81,6 @@ function Students() {
     if (q) setSearch(q);
   }, []);
 
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [search, statusFilter, courseFilter]);
 
   const handleAddStudent = async (newStudent) => {
     const payload = {
@@ -364,10 +359,6 @@ function Students() {
     return matchesSearch && matchesStatus && matchesCourse;
   });
 
-  // Calculate Pagination Slices
-  const totalElements = filteredStudents.length;
-  const totalPages = Math.ceil(totalElements / pageSize) || 1;
-  const paginatedStudents = filteredStudents.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   return (
     <Layout>
@@ -551,26 +542,13 @@ function Students() {
 
           {/* Student Table View */}
           <StudentTable
-            students={paginatedStudents}
+            students={filteredStudents}
             onView={handleView}
             onEdit={handleEdit}
             onDelete={handleDeleteClick}
             onStatusChange={(student, newStatus) =>
               handleUpdateStudent({ ...student, status: newStatus })
             }
-          />
-
-          {/* Pagination Controls */}
-          <Pagination
-            currentPage={currentPage}
-            totalPages={totalPages}
-            pageSize={pageSize}
-            totalElements={totalElements}
-            onPageChange={setCurrentPage}
-            onPageSizeChange={(newSize) => {
-              setPageSize(newSize);
-              setCurrentPage(1);
-            }}
           />
         </CardContent>
       </Card>

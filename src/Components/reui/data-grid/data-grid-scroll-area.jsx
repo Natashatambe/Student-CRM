@@ -20,7 +20,7 @@ const INITIAL_METRICS = {
 const SCROLLBAR_CLASSNAME =
   "flex touch-none p-px transition-colors select-none data-[orientation=horizontal]:h-2.5 data-[orientation=horizontal]:flex-col data-[orientation=horizontal]:border-t data-[orientation=horizontal]:border-t-transparent data-[orientation=vertical]:h-full data-[orientation=vertical]:w-2 data-[orientation=vertical]:border-s data-[orientation=vertical]:border-s-transparent"
 
-const SCROLLBAR_THUMB_CLASSNAME = "bg-border rounded-full relative flex-1"
+const SCROLLBAR_THUMB_CLASSNAME = "bg-[#e6dfd8] rounded-full relative flex-1"
 
 function clamp(value, min, max) {
   return Math.min(max, Math.max(min, value));

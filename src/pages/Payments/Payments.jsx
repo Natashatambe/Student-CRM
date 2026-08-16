@@ -1,13 +1,18 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import Layout from "../../Components/layout/Layout";
 import { Card, CardContent } from "../../Components/ui/card";
 import { Button } from "../../Components/ui/button";
 import { Input } from "../../Components/ui/input";
-import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from "../../Components/ui/table";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetFooter } from "../../Components/ui/sheet";
 import { Select } from "../../Components/ui/select";
 import { useToast } from "../../Components/ui/toast";
 import { CreditCard, DollarSign, Clock, CheckCircle2, Plus, Search, ArrowUpRight, Download, FileSpreadsheet, Mail, Sparkles, User, BookOpen } from "lucide-react";
+import { useTable } from "@tanstack/react-table";
+import { dataGridFeatures, DataGrid, DataGridContainer } from "../../Components/reui/data-grid/data-grid";
+import { DataGridScrollArea } from "../../Components/reui/data-grid/data-grid-scroll-area";
+import { DataGridTable } from "../../Components/reui/data-grid/data-grid-table";
+import { DataGridColumnHeader } from "../../Components/reui/data-grid/data-grid-column-header";
+import { DataGridPagination } from "../../Components/reui/data-grid/data-grid-pagination";
 import { getPayments, addPayment } from "../../services/paymentService";
 import { getAdmissions } from "../../services/admissionService";
 import { exportToExcel, exportToPDF } from "../../lib/exportUtils";
@@ -17,7 +22,6 @@ import StripePaymentModal from "../../Components/common/StripePaymentModal";
 import PageHeader from "../../Components/common/PageHeader";
 import StatCard from "../../Components/common/StatCard";
 import StatusBadge from "../../Components/common/StatusBadge";
-import Pagination from "../../Components/common/Pagination";
 
 function Payments() {
   const { showToast } = useToast();
@@ -34,8 +38,6 @@ function Payments() {
   const [stripePaymentData, setStripePaymentData] = useState(null);
 
   const [statusTab, setStatusTab] = useState("all");
-  const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
 
   const [newPayment, setNewPayment] = useState({
     studentName: "",
@@ -72,9 +74,7 @@ function Payments() {
     if (q) setSearch(q);
   }, []);
 
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [search, statusTab]);
+
 
   const handleLaunchStripeDirect = (pData = null) => {
     const dataToUse = pData || {
@@ -308,9 +308,93 @@ function Payments() {
   const totalPotential = totalCollected + pendingDues;
   const collectionRate = totalPotential > 0 ? ((totalCollected / totalPotential) * 100).toFixed(1) : "100.0";
 
-  const totalElements = filteredPayments.length;
-  const totalPages = Math.ceil(totalElements / pageSize) || 1;
-  const paginatedPayments = filteredPayments.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+  const paymentsColumns = useMemo(() => [
+    {
+      id: "txnId",
+      accessorKey: "id",
+      header: ({ column }) => <DataGridColumnHeader column={column} title="TXN ID" />,
+      size: 140,
+      cell: ({ getValue }) => <span className="font-mono text-xs font-bold text-[#cc785c]">{getValue()}</span>,
+    },
+    {
+      id: "student",
+      accessorKey: "studentName",
+      header: ({ column }) => <DataGridColumnHeader column={column} title="Student Partner" />,
+      size: 200,
+      cell: ({ row }) => {
+        const p = row.original;
+        return (
+          <div>
+            <span className="font-semibold text-[#141413] text-xs">{p.studentName}</span>
+            {p.notes && <span className="block text-[11px] text-[#6c6a64] font-medium">{p.notes}</span>}
+          </div>
+        );
+      },
+    },
+    {
+      id: "course",
+      accessorFn: (row) => row.course || row.courseName,
+      header: ({ column }) => <DataGridColumnHeader column={column} title="Course Track" />,
+      size: 160,
+      cell: ({ getValue }) => <span className="text-[#141413] text-xs font-semibold">{getValue()}</span>,
+    },
+    {
+      id: "method",
+      accessorFn: (row) => row.method || row.paymentMethod,
+      header: ({ column }) => <DataGridColumnHeader column={column} title="Payment Method" />,
+      size: 150,
+      cell: ({ getValue }) => <span className="text-[#6c6a64] text-xs font-semibold">{getValue()}</span>,
+    },
+    {
+      id: "amount",
+      accessorKey: "amount",
+      header: ({ column }) => <DataGridColumnHeader column={column} title="Amount" />,
+      size: 110,
+      cell: ({ getValue }) => <span className="font-bold text-[#141413] text-xs tracking-tight">₹{(getValue() || 0).toLocaleString()}</span>,
+    },
+    {
+      id: "date",
+      accessorKey: "date",
+      header: ({ column }) => <DataGridColumnHeader column={column} title="Date" />,
+      size: 110,
+      cell: ({ getValue }) => <span className="text-[#6c6a64] text-xs font-medium whitespace-nowrap">{getValue()}</span>,
+    },
+    {
+      id: "status",
+      accessorKey: "status",
+      header: ({ column }) => <DataGridColumnHeader column={column} title="Status" />,
+      size: 110,
+      cell: ({ getValue }) => <StatusBadge status={getValue()} />,
+    },
+    {
+      id: "actions",
+      header: "Receipt Action",
+      size: 150,
+      enableSorting: false,
+      cell: ({ row }) => {
+        const p = row.original;
+        return p.status === "Pending" ? (
+          <Button size="xs" variant="stripe" onClick={() => handleLaunchStripeDirect(p)}
+            className="gap-1 text-xs font-bold px-2.5 py-1 rounded-lg bg-[#635bff] hover:bg-[#534ae4] text-white">
+            <CreditCard className="h-3.5 w-3.5" /> Pay ₹{(p.amount || 0).toLocaleString()}
+          </Button>
+        ) : (
+          <Button size="xs" variant="outline" onClick={() => handleOpenReceiptEmail(p)}
+            className="gap-1 text-xs border-[#e6dfd8] bg-[#faf9f5] hover:bg-[#efe9de] text-[#141413]">
+            <Mail className="h-3.5 w-3.5 text-[#cc785c]" /> Receipt Email
+          </Button>
+        );
+      },
+    },
+  ], [filteredPayments]);
+
+  const paymentsTable = useTable({
+    features: dataGridFeatures,
+    data: filteredPayments,
+    columns: paymentsColumns,
+    initialState: { pagination: { pageSize: 10, pageIndex: 0 } },
+    getRowId: (row, idx) => String(row.id || idx),
+  });
 
   return (
     <Layout>
@@ -432,73 +516,29 @@ function Payments() {
             </div>
           </div>
 
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-28 font-bold">TXN ID</TableHead>
-                <TableHead className="font-bold">Student Partner</TableHead>
-                <TableHead className="font-bold">Course Track</TableHead>
-                <TableHead className="font-bold">Payment Method</TableHead>
-                <TableHead className="font-bold">Amount</TableHead>
-                <TableHead className="font-bold">Date</TableHead>
-                <TableHead className="font-bold">Status</TableHead>
-                <TableHead className="text-right font-bold">Receipt Action</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {paginatedPayments.map((p) => (
-                <TableRow key={p.id} className={p.status === "Pending" ? "bg-[#efe9de]/40" : "hover:bg-[#efe9de]/50"}>
-                  <TableCell className="font-mono text-xs font-bold text-[#cc785c]">{p.id}</TableCell>
-                  <TableCell className="font-semibold text-[#141413] text-xs md:text-sm">
-                    {p.studentName}
-                    {p.notes && <span className="block text-[11px] text-[#6c6a64] font-medium">{p.notes}</span>}
-                  </TableCell>
-                  <TableCell className="text-[#141413] text-xs md:text-sm font-semibold">{p.course || p.courseName}</TableCell>
-                  <TableCell className="text-[#6c6a64] text-xs font-semibold">{p.method || p.paymentMethod}</TableCell>
-                  <TableCell className="font-bold text-[#141413] text-xs md:text-sm tracking-tight min-w-[100px]">
-                    ₹{(p.amount || 0).toLocaleString()}
-                  </TableCell>
-                  <TableCell className="text-[#6c6a64] text-xs font-medium whitespace-nowrap">{p.date}</TableCell>
-                  <TableCell>
-                    <StatusBadge status={p.status} />
-                  </TableCell>
-                  <TableCell className="text-right">
-                    {p.status === "Pending" ? (
-                      <Button
-                        size="xs"
-                        variant="stripe"
-                        onClick={() => handleLaunchStripeDirect(p)}
-                        className="gap-1 text-xs font-bold px-2.5 py-1 rounded-lg bg-[#635bff] hover:bg-[#534ae4] text-white"
-                      >
-                        <CreditCard className="h-3.5 w-3.5" /> Pay ₹{(p.amount || 0).toLocaleString()}
-                      </Button>
-                    ) : (
-                      <Button
-                        size="xs"
-                        variant="outline"
-                        onClick={() => handleOpenReceiptEmail(p)}
-                        className="gap-1 text-xs border-[#e6dfd8] bg-[#faf9f5] hover:bg-[#efe9de] text-[#141413]"
-                      >
-                        <Mail className="h-3.5 w-3.5 text-[#cc785c]" /> Receipt Email
-                      </Button>
-                    )}
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-
-          <Pagination
-            currentPage={currentPage}
-            totalPages={totalPages}
-            pageSize={pageSize}
-            totalElements={totalElements}
-            onPageChange={setCurrentPage}
-            onPageSizeChange={(newSize) => {
-              setPageSize(newSize);
-              setCurrentPage(1);
-            }}
-          />
+          <div className="rounded-xl border border-[#e6dfd8] overflow-hidden">
+            <DataGrid
+              table={paymentsTable}
+              recordCount={filteredPayments.length}
+              tableLayout={{ rowBorder: true, headerBackground: true }}
+              tableClassNames={{ base: "text-xs" }}
+            >
+              <DataGridContainer>
+                <DataGridScrollArea>
+                  <DataGridTable />
+                </DataGridScrollArea>
+                {filteredPayments.length === 0 ? (
+                  <div className="text-center py-12 text-[#6c6a64] font-medium text-sm">
+                    No fee transactions found matching your search.
+                  </div>
+                ) : (
+                  <div className="border-t border-[#e6dfd8] px-4 py-2">
+                    <DataGridPagination />
+                  </div>
+                )}
+              </DataGridContainer>
+            </DataGrid>
+          </div>
         </CardContent>
       </Card>
 
