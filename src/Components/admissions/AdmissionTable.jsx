@@ -31,14 +31,6 @@ const formatDateWithSpace = (rawDate) => {
 function AdmissionTable({ admissions = [], loading = false, onEdit, onDelete, onManageEmi, onViewReceipt }) {
   const columns = useMemo(() => [
     {
-      id: "admissionId",
-      header: ({ column }) => <DataGridColumnHeader column={column} title="ID" />,
-      size: 70,
-      cell: ({ row }) => (
-        <span className="font-mono text-xs font-bold text-[#cc785c]">#{101 + row.index}</span>
-      ),
-    },
-    {
       id: "student",
       accessorFn: (row) => {
         const raw = row.studentName || (typeof row.student === "string" ? row.student : (row.student ? (row.student.name || `${row.student.firstName || ""} ${row.student.lastName || ""}`.trim()) : ""));

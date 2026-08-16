@@ -94,18 +94,7 @@ const StatusPill = ({ status, onSelect }) => {
 /* ─── Main Component ─── */
 function StudentTable({ students = [], loading = false, onEdit, onDelete, onView, onStatusChange }) {
   const columns = useMemo(() => [
-    /* STU ID */
-    {
-      id: "studentId",
-      accessorKey: "formattedId",
-      header: ({ column }) => <DataGridColumnHeader column={column} title="STU ID" />,
-      size: 95,
-      cell: ({ row }) => (
-        <span className="font-mono text-xs font-bold text-[#cc785c]">
-          {row.original.formattedId || `STU-${101 + row.index}`}
-        </span>
-      ),
-    },
+
 
     /* Student Partner & Contact */
     {
@@ -191,9 +180,6 @@ function StudentTable({ students = [], loading = false, onEdit, onDelete, onView
         return isActive || s.totalFee || s.admissionDate ? (
           <div className="space-y-1 text-xs">
             <div className="flex items-center gap-2">
-              <span className="font-mono text-[11px] font-bold text-[#cc785c] bg-[#faf9f5] border border-[#e6dfd8] px-1.5 py-px rounded">
-                #{101 + idx}
-              </span>
               <span className="font-bold text-[#141413] tracking-tight">₹{feeNum.toLocaleString()}</span>
             </div>
             <div className="flex items-center gap-1.5 flex-wrap">
@@ -343,7 +329,6 @@ function StudentTable({ students = [], loading = false, onEdit, onDelete, onView
                     <p onClick={() => onView?.(s)} className="font-semibold text-sm text-[#141413] hover:text-[#cc785c] cursor-pointer">
                       {name}
                     </p>
-                    <p className="font-mono text-xs text-[#cc785c] font-bold">{s.formattedId || `STU-${101 + i}`}</p>
                   </div>
                 </div>
                 <StatusPill status={st} onSelect={(ns) => { if (onStatusChange) onStatusChange(s, ns); else onEdit?.({ ...s, status: ns }); }} />

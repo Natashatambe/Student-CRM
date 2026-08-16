@@ -16,21 +16,6 @@ import LoadingState from "@/Components/common/LoadingState";
 function CourseTable({ courses = [], loading = false, onEdit, onDelete }) {
   const columns = useMemo(() => [
     {
-      id: "courseId",
-      accessorFn: (row) => row.id ?? row.courseId ?? 0,
-      header: ({ column }) => <DataGridColumnHeader column={column} title="ID" />,
-      size: 90,
-      cell: ({ row }) => {
-        const course = row.original;
-        const courseId = course.id ?? course.courseId ?? 0;
-        return (
-          <span className="font-mono text-xs font-bold text-[#cc785c]">
-            CRS-{courseId || (101 + row.index)}
-          </span>
-        );
-      },
-    },
-    {
       id: "course",
       accessorFn: (row) => row.name || row.courseName || row.title || "Course Track",
       header: ({ column }) => <DataGridColumnHeader column={column} title="Course Track" />,
