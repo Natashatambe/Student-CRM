@@ -26,7 +26,7 @@ const Dialog = ({ open, onOpenChange, children }) => {
 
   return (
     <DialogContext.Provider value={{ open, onClose: handleClose }}>
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 overflow-y-auto">
+      <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 sm:p-6 overflow-y-auto">
         {/* Overlay backdrop */}
         <div
           className="fixed inset-0 bg-black/60 backdrop-blur-xs transition-opacity animate-in fade-in-0 duration-200"
@@ -34,7 +34,7 @@ const Dialog = ({ open, onOpenChange, children }) => {
         />
 
         {/* Modal Window Container */}
-        <div className="relative z-50 w-full max-w-lg my-auto animate-in zoom-in-95 duration-200 focus:outline-none">
+        <div className="relative z-[201] w-full max-w-lg my-auto animate-in zoom-in-95 duration-200 focus:outline-none">
           {children}
         </div>
       </div>
