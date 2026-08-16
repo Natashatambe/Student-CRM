@@ -3,6 +3,7 @@ import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from ".
 import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "../ui/dropdown-menu";
+import StatusBadge from "../common/StatusBadge";
 
 function CourseTable({ courses = [], onEdit, onDelete }) {
   return (
@@ -78,9 +79,7 @@ function CourseTable({ courses = [], onEdit, onDelete }) {
                 </TableCell>
 
                 <TableCell>
-                  <Badge variant={status === "Active" ? "success" : "destructive"}>
-                    {status}
-                  </Badge>
+                  <StatusBadge status={status} />
                 </TableCell>
 
                 <TableCell className="text-right">

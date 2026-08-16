@@ -17,9 +17,11 @@ const buttonVariants = cva(
         link: "text-[#cc785c] underline-offset-4 hover:underline",
         coralInverted: "bg-[#faf9f5] text-[#cc785c] hover:bg-white border border-[#faf9f5] font-semibold",
         pillPrimary: "bg-[#cc785c] text-white hover:bg-[#a9583e] rounded-full shadow-2xs",
+        stripe: "bg-[#635bff] text-white hover:bg-[#544dc9] border border-[#635bff] shadow-2xs font-bold",
       },
       size: {
         default: "h-10 px-4 py-2",
+        xs: "h-7 px-2.5 text-xs rounded-md",
         sm: "h-8 px-3 text-xs rounded-md",
         lg: "h-11 px-6 text-base font-medium rounded-md",
         icon: "h-10 w-10 p-0 rounded-md",

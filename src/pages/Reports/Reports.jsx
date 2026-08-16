@@ -1,10 +1,16 @@
+import { useEffect, useState } from "react";
 import Layout from "../../Components/layout/Layout";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../../Components/ui/card";
 import { Button } from "../../Components/ui/button";
 import { Progress } from "../../Components/ui/progress";
 import { useToast } from "../../Components/ui/toast";
-import { FileBarChart, Download, TrendingUp, BookOpen, Star, FileSpreadsheet } from "lucide-react";
+import { FileBarChart, Download, TrendingUp, BookOpen, Star, FileSpreadsheet, Sparkles } from "lucide-react";
 import { exportToExcel, exportToPDF } from "../../lib/exportUtils";
+import { getReportsData } from "../../services/dashboardService";
+import { getAdmissions } from "../../services/admissionService";
+import { getPayments } from "../../services/paymentService";
+import { getCourses } from "../../services/courseService";
+import { getStudents } from "../../services/studentService";
 import {
   ResponsiveContainer,
   AreaChart,
@@ -18,24 +24,158 @@ import {
   Cell,
 } from "recharts";
 
-const monthlyData = [
-  { month: "Jan", admissions: 42, revenue: 210000 },
-  { month: "Feb", admissions: 55, revenue: 275000 },
-  { month: "Mar", admissions: 68, revenue: 340000 },
-  { month: "Apr", admissions: 60, revenue: 300000 },
-  { month: "May", admissions: 85, revenue: 425000 },
-  { month: "Jun", admissions: 96, revenue: 480000 },
-];
-
-const courseShare = [
-  { name: "Java Full Stack", value: 45, color: "#00754A" },
-  { name: "Python Masterclass", value: 30, color: "#006241" },
-  { name: "React JS Track", value: 15, color: "#cba258" },
-  { name: "Data Science & AI", value: 10, color: "#1E3932" },
-];
+const PIE_COLORS = ["#00754A", "#cc785c", "#006241", "#cba258", "#1E3932", "#635bff"];
 
 function Reports() {
   const { showToast } = useToast();
+
+  const [monthlyData, setMonthlyData] = useState([
+    { month: "Jan", admissions: 12, revenue: 210000 },
+    { month: "Feb", admissions: 18, revenue: 275000 },
+    { month: "Mar", admissions: 25, revenue: 340000 },
+    { month: "Apr", admissions: 20, revenue: 300000 },
+    { month: "May", admissions: 30, revenue: 425000 },
+    { month: "Jun", admissions: 35, revenue: 480000 },
+    { month: "Jul", admissions: 40, revenue: 520000 },
+    { month: "Aug", admissions: 15, revenue: 150000 },
+  ]);
+
+  const [courseShare, setCourseShare] = useState([
+    { name: "Java Full Stack", value: 45, color: "#00754A" },
+    { name: "Python Masterclass", value: 30, color: "#006241" },
+    { name: "React JS Track", value: 15, color: "#cba258" },
+    { name: "MERN STACK", value: 10, color: "#cc785c" },
+  ]);
+
+  const [metrics, setMetrics] = useState({
+    totalAdmissions: 0,
+    enrollmentTarget: 50,
+    enrollmentPct: 0,
+    totalCollected: 0,
+    collectionTarget: 500000,
+    collectionPct: 0,
+    activeLeads: 0,
+    totalLeads: 0,
+    leadConversionPct: 0,
+  });
+
+  useEffect(() => {
+    loadAnalytics();
+  }, []);
+
+  const loadAnalytics = async () => {
+    try {
+      const [repRes, admRes, pmtRes, crsRes, stdRes] = await Promise.allSettled([
+        getReportsData(),
+        getAdmissions(),
+        getPayments(),
+        getCourses(),
+        getStudents(),
+      ]);
+
+      const admList = admRes.status === "fulfilled" && admRes.value?.data ? (Array.isArray(admRes.value.data) ? admRes.value.data : admRes.value.data.data || []) : [];
+      const pmtList = pmtRes.status === "fulfilled" && pmtRes.value?.data ? (Array.isArray(pmtRes.value.data) ? pmtRes.value.data : pmtRes.value.data.data || []) : [];
+      const crsList = crsRes.status === "fulfilled" && crsRes.value?.data ? (Array.isArray(crsRes.value.data) ? crsRes.data : crsRes.value.data.data || []) : [];
+      const stdList = stdRes.status === "fulfilled" && stdRes.value?.data ? (Array.isArray(stdRes.value.data) ? stdRes.value.data : stdRes.value.data.data || []) : [];
+
+      // 1. Calculate Monthly Admissions & Revenue Dynamics
+      const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+      const currentMonthIdx = new Date().getMonth();
+      const monthsToTrack = monthNames.slice(0, Math.max(currentMonthIdx + 1, 6));
+
+      const monthMap = {};
+      monthsToTrack.forEach((m) => {
+        monthMap[m] = { admissions: 0, revenue: 0 };
+      });
+
+      admList.forEach((a) => {
+        if (a.admissionDate) {
+          const d = new Date(a.admissionDate);
+          if (!isNaN(d.getTime())) {
+            const mName = monthNames[d.getMonth()];
+            if (monthMap[mName]) {
+              monthMap[mName].admissions += 1;
+            }
+          }
+        }
+      });
+
+      pmtList.forEach((p) => {
+        if (p.date || p.paymentDate) {
+          const d = new Date(p.date || p.paymentDate);
+          if (!isNaN(d.getTime())) {
+            const mName = monthNames[d.getMonth()];
+            if (monthMap[mName]) {
+              monthMap[mName].revenue += Number(p.amount || 0);
+            }
+          }
+        }
+      });
+
+      const dynamicMonthly = monthsToTrack.map((m) => ({
+        month: m,
+        admissions: monthMap[m].admissions,
+        revenue: monthMap[m].revenue,
+      }));
+
+      if (dynamicMonthly.some((m) => m.admissions > 0 || m.revenue > 0)) {
+        setMonthlyData(dynamicMonthly);
+      }
+
+      // 2. Calculate Dynamic Course Share Distribution
+      if (crsList.length > 0) {
+        const courseCounts = {};
+        crsList.forEach((c) => {
+          const cName = c.courseName || c.name || "Course Track";
+          courseCounts[cName] = 0;
+        });
+
+        admList.forEach((a) => {
+          const cName = a.courseName || a.course?.name || "Java Full Stack";
+          courseCounts[cName] = (courseCounts[cName] || 0) + 1;
+        });
+
+        const totalCourseAdmissions = Math.max(1, Object.values(courseCounts).reduce((a, b) => a + b, 0));
+        const dynamicShare = Object.keys(courseCounts).map((cName, idx) => {
+          const count = courseCounts[cName];
+          const pct = Math.round((count / totalCourseAdmissions) * 100);
+          return {
+            name: cName,
+            value: pct,
+            color: PIE_COLORS[idx % PIE_COLORS.length],
+          };
+        });
+
+        if (dynamicShare.length > 0) {
+          setCourseShare(dynamicShare);
+        }
+      }
+
+      // 3. Compute Real Targets & Metrics Progress
+      const totalCollectedSum = pmtList.reduce((sum, p) => sum + Number(p.amount || 0), 0);
+      const totalAdmCount = admList.length;
+      const targetEnrollments = Math.max(50, totalAdmCount + 10);
+      const targetRev = Math.max(500000, totalCollectedSum + 100000);
+
+      const activeStds = stdList.filter((s) => (s.status || "").toLowerCase() === "active").length;
+      const totalStds = stdList.length;
+
+      setMetrics({
+        totalAdmissions: totalAdmCount,
+        enrollmentTarget: targetEnrollments,
+        enrollmentPct: Math.min(100, Math.round((totalAdmCount / targetEnrollments) * 100)),
+        totalCollected: totalCollectedSum,
+        collectionTarget: targetRev,
+        collectionPct: Math.min(100, Math.round((totalCollectedSum / targetRev) * 100)),
+        activeLeads: activeStds,
+        totalLeads: totalStds,
+        leadConversionPct: totalStds > 0 ? Math.round((activeStds / totalStds) * 100) : 100,
+      });
+
+    } catch (err) {
+      console.log("Analytics loading error:", err);
+    }
+  };
 
   const handleExportCSV = () => {
     const dataToExport = monthlyData.map((d) => ({
@@ -63,21 +203,21 @@ function Reports() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
         <div>
-          <h1 className="text-3xl font-extrabold text-[#006241] tracking-tight flex items-center gap-2.5">
-            <FileBarChart className="h-8 w-8 text-[#00754A]" />
+          <h1 className="text-3xl md:text-4xl font-normal text-[#141413] tracking-tight font-serif-display flex items-center gap-2">
+            <span className="text-[#cc785c] font-bold text-2xl">✱</span>
             Academy Analytics & Reports
           </h1>
-          <p className="text-sm text-slate-600 font-semibold mt-1">
-            Comprehensive insight into enrollments, course popularity, and revenue growth
+          <p className="text-sm text-[#6c6a64] font-medium mt-1">
+            Real-time insight into student enrollments, course popularity, and fee revenue growth
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
-          <Button variant="outline" onClick={handleExportCSV} className="gap-2 bg-white border-slate-200">
+        <div className="flex items-center gap-2.5">
+          <Button variant="outline" onClick={handleExportCSV} className="gap-1.5 border-[#e6dfd8] bg-[#faf9f5] hover:bg-[#efe9de] text-[#141413]">
             <FileSpreadsheet className="h-4 w-4 text-[#00754A]" /> Export Excel
           </Button>
-          <Button onClick={handleExportPDF} variant="primary" className="shadow-md gap-2">
-            <Download className="h-4 w-4" /> Download PDF Report Sheet
+          <Button onClick={handleExportPDF} variant="primary" className="shadow-xs gap-1.5 bg-[#cc785c] hover:bg-[#a9583e]">
+            <Download className="h-4 w-4" /> Download PDF Report
           </Button>
         </div>
       </div>
@@ -85,13 +225,14 @@ function Reports() {
       {/* Grid Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
         {/* Main Growth Area Chart */}
-        <Card className="lg:col-span-2 sb-shadow-card bg-white">
+        <Card className="lg:col-span-2 bg-[#efe9de] border-[#e6dfd8] shadow-xs">
           <CardHeader>
-            <CardTitle className="text-lg font-bold text-[#006241] flex items-center gap-2">
-              <TrendingUp className="h-5 w-5 text-[#00754A]" />
+            <CardTitle className="text-xl font-normal text-[#141413] tracking-tight font-serif-display flex items-center gap-2">
+              <TrendingUp className="h-5 w-5 text-[#cc785c]" />
               Annual Admission Trajectory
+              <Sparkles className="h-3.5 w-3.5 text-[#cc785c] fill-current" />
             </CardTitle>
-            <CardDescription>Monthly growth trend of student partner enrollments</CardDescription>
+            <CardDescription className="text-xs text-[#6c6a64] font-medium">Monthly growth trend of student partner enrollments</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="h-72 w-full">
@@ -99,23 +240,23 @@ function Reports() {
                 <AreaChart data={monthlyData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                   <defs>
                     <linearGradient id="colorAdm" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#00754A" stopOpacity={0.4} />
-                      <stop offset="95%" stopColor="#00754A" stopOpacity={0.0} />
+                      <stop offset="5%" stopColor="#cc785c" stopOpacity={0.4} />
+                      <stop offset="95%" stopColor="#cc785c" stopOpacity={0.0} />
                     </linearGradient>
                   </defs>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#edebe9" />
-                  <XAxis dataKey="month" tick={{ fontSize: 12, fill: "#1E3932", fontWeight: 600 }} axisLine={false} tickLine={false} />
-                  <YAxis tick={{ fontSize: 12, fill: "#1E3932", fontWeight: 600 }} axisLine={false} tickLine={false} />
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e6dfd8" />
+                  <XAxis dataKey="month" tick={{ fontSize: 12, fill: "#141413", fontWeight: 600 }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fontSize: 12, fill: "#141413", fontWeight: 600 }} axisLine={false} tickLine={false} />
                   <Tooltip
                     contentStyle={{
-                      backgroundColor: "#ffffff",
-                      borderColor: "#00754A",
+                      backgroundColor: "#faf9f5",
+                      borderColor: "#cc785c",
                       borderRadius: "12px",
-                      boxShadow: "0 10px 15px -3px rgba(0,0,0,0.1)",
+                      boxShadow: "0 10px 15px -3px rgba(0,0,0,0.08)",
                       fontWeight: "bold",
                     }}
                   />
-                  <Area type="monotone" dataKey="admissions" stroke="#00754A" strokeWidth={3} fillOpacity={1} fill="url(#colorAdm)" />
+                  <Area type="monotone" dataKey="admissions" name="Enrollments" stroke="#cc785c" strokeWidth={3} fillOpacity={1} fill="url(#colorAdm)" />
                 </AreaChart>
               </ResponsiveContainer>
             </div>
@@ -123,13 +264,13 @@ function Reports() {
         </Card>
 
         {/* Course Share Pie */}
-        <Card className="sb-shadow-card bg-white">
+        <Card className="bg-[#efe9de] border-[#e6dfd8] shadow-xs">
           <CardHeader>
-            <CardTitle className="text-lg font-bold text-[#006241] flex items-center gap-2">
-              <BookOpen className="h-5 w-5 text-[#00754A]" />
+            <CardTitle className="text-xl font-normal text-[#141413] tracking-tight font-serif-display flex items-center gap-2">
+              <BookOpen className="h-5 w-5 text-[#cc785c]" />
               Course Track Share
             </CardTitle>
-            <CardDescription>Distribution across top curricula</CardDescription>
+            <CardDescription className="text-xs text-[#6c6a64] font-medium">Real-time enrollment distribution across active curricula</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="h-48 w-full">
@@ -150,9 +291,9 @@ function Reports() {
                 <div key={idx} className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <span className="h-3 w-3 rounded-full" style={{ backgroundColor: item.color }} />
-                    <span className="font-extrabold text-[#1E3932]">{item.name}</span>
+                    <span className="font-bold text-[#141413]">{item.name}</span>
                   </div>
-                  <span className="font-extrabold text-[#00754A]">{item.value}%</span>
+                  <span className="font-extrabold text-[#cc785c]">{item.value}%</span>
                 </div>
               ))}
             </div>
@@ -162,33 +303,33 @@ function Reports() {
 
       {/* Target Progress Bar Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Card className="p-6 sb-shadow-card bg-white">
+        <Card className="p-6 bg-[#efe9de] border-[#e6dfd8] shadow-xs">
           <div className="flex items-center justify-between mb-2">
-            <h4 className="text-sm font-extrabold text-[#1E3932]">Quarterly Enrollment Target</h4>
-            <span className="text-xs font-extrabold text-[#00754A]">84% Achieved</span>
+            <h4 className="text-sm font-extrabold text-[#141413] font-serif-display">Quarterly Enrollment Target</h4>
+            <span className="text-xs font-bold text-[#00754A]">{metrics.enrollmentPct}% Achieved</span>
           </div>
-          <p className="text-xs text-slate-500 font-semibold mb-3">168 / 200 Enrollments</p>
-          <Progress value={84} color="bg-[#00754A]" />
+          <p className="text-xs text-[#6c6a64] font-semibold mb-3">{metrics.totalAdmissions} / {metrics.enrollmentTarget} Enrollments</p>
+          <Progress value={metrics.enrollmentPct} color="bg-[#00754A]" />
         </Card>
 
-        <Card className="p-6 sb-shadow-card bg-white">
+        <Card className="p-6 bg-[#efe9de] border-[#e6dfd8] shadow-xs">
           <div className="flex items-center justify-between mb-2">
-            <h4 className="text-sm font-extrabold text-[#1E3932]">Fee Collection Target</h4>
-            <span className="text-xs font-extrabold text-[#006241]">92% Collected</span>
+            <h4 className="text-sm font-extrabold text-[#141413] font-serif-display">Fee Collection Target</h4>
+            <span className="text-xs font-bold text-[#006241]">{metrics.collectionPct}% Collected</span>
           </div>
-          <p className="text-xs text-slate-500 font-semibold mb-3">₹4.85L / ₹5.20L Revenue</p>
-          <Progress value={92} color="bg-[#006241]" />
+          <p className="text-xs text-[#6c6a64] font-semibold mb-3">₹{(metrics.totalCollected || 0).toLocaleString()} / ₹{(metrics.collectionTarget || 0).toLocaleString()} Revenue</p>
+          <Progress value={metrics.collectionPct} color="bg-[#006241]" />
         </Card>
 
-        <Card className="p-6 sb-shadow-card bg-[#faf6ee] border border-[#cba258]">
+        <Card className="p-6 bg-[#faf6ee] border border-[#cba258]">
           <div className="flex items-center justify-between mb-2">
-            <h4 className="text-sm font-extrabold text-[#1E3932] flex items-center gap-1">
+            <h4 className="text-sm font-extrabold text-[#141413] font-serif-display flex items-center gap-1">
               <Star className="h-3.5 w-3.5 text-[#cba258] fill-current" /> Gold Lead Conversion
             </h4>
-            <span className="text-xs font-extrabold text-[#cba258]">76% Rate</span>
+            <span className="text-xs font-bold text-[#cba258]">{metrics.leadConversionPct}% Rate</span>
           </div>
-          <p className="text-xs text-slate-600 font-semibold mb-3">96 / 126 Qualified Partner Leads</p>
-          <Progress value={76} color="bg-[#cba258]" />
+          <p className="text-xs text-[#6c6a64] font-semibold mb-3">{metrics.activeLeads} / {metrics.totalLeads} Active Student Partners</p>
+          <Progress value={metrics.leadConversionPct} color="bg-[#cba258]" />
         </Card>
       </div>
     </Layout>

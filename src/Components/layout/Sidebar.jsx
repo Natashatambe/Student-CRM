@@ -9,7 +9,6 @@ import {
   FileBarChart,
   ChevronLeft,
   ChevronRight,
-  LogOut,
   Sparkles,
 } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "../ui/avatar";
@@ -82,12 +81,6 @@ function Sidebar({ collapsed, setCollapsed }) {
       ],
     },
   ];
-
-  const handleLogout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("loggedIn");
-    navigate("/login");
-  };
 
   return (
     <>
@@ -205,37 +198,29 @@ function Sidebar({ collapsed, setCollapsed }) {
         {/* Footer Admin Summary with DiceBear Glyphs Avatar */}
         <div className="p-3 border-t border-[#252320] bg-[#1f1e1b] shrink-0 overflow-hidden">
           {!collapsed ? (
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2 overflow-hidden">
-                <Avatar className="h-8.5 w-8.5 ring-1 ring-[#cc785c]/40 shrink-0 bg-[#252320]">
-                  <AvatarImage src="https://api.dicebear.com/10.x/glyphs/svg?seed=SeniorAdminCRM" alt="Senior Admin" />
-                  <AvatarFallback className="bg-[#cc785c] text-white font-medium text-[11px]">
-                    SA
-                  </AvatarFallback>
-                </Avatar>
-                <div className="truncate">
-                  <p className="text-[11px] font-medium text-[#faf9f5] truncate flex items-center gap-1">
-                    Senior Admin <Sparkles className="h-2.5 w-2.5 text-[#cc785c] fill-current shrink-0" />
-                  </p>
-                  <p className="text-[9px] text-[#a09d96] truncate">Admission Portal</p>
-                </div>
+            <div className="flex items-center gap-2 overflow-hidden">
+              <Avatar className="h-8.5 w-8.5 ring-1 ring-[#cc785c]/40 shrink-0 bg-[#252320]">
+                <AvatarImage src="https://api.dicebear.com/10.x/glyphs/svg?seed=SeniorAdminCRM" alt="Senior Admin" />
+                <AvatarFallback className="bg-[#cc785c] text-white font-medium text-[11px]">
+                  SA
+                </AvatarFallback>
+              </Avatar>
+              <div className="truncate">
+                <p className="text-[11px] font-medium text-[#faf9f5] truncate flex items-center gap-1">
+                  Senior Admin <Sparkles className="h-2.5 w-2.5 text-[#cc785c] fill-current shrink-0" />
+                </p>
+                <p className="text-[9px] text-[#a09d96] truncate">Admission Portal</p>
               </div>
-              <button
-                onClick={handleLogout}
-                className="h-7 w-7 rounded-md text-[#a09d96] hover:text-red-400 hover:bg-[#252320] flex items-center justify-center transition active:scale-95 shrink-0 cursor-pointer"
-                title="Logout"
-              >
-                <LogOut className="h-3.5 w-3.5" />
-              </button>
             </div>
           ) : (
-            <button
-              onClick={handleLogout}
-              className="w-full h-8 rounded-md text-[#a09d96] hover:text-red-400 hover:bg-[#252320] flex items-center justify-center transition active:scale-95 cursor-pointer shrink-0"
-              title="Logout"
-            >
-              <LogOut className="h-3.5 w-3.5" />
-            </button>
+            <div className="flex justify-center">
+              <Avatar className="h-7.5 w-7.5 ring-1 ring-[#cc785c]/40 shrink-0 bg-[#252320]">
+                <AvatarImage src="https://api.dicebear.com/10.x/glyphs/svg?seed=SeniorAdminCRM" alt="Senior Admin" />
+                <AvatarFallback className="bg-[#cc785c] text-white font-medium text-[10px]">
+                  SA
+                </AvatarFallback>
+              </Avatar>
+            </div>
           )}
         </div>
       </aside>

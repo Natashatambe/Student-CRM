@@ -59,10 +59,10 @@ const DialogContent = React.forwardRef(({ className, children, onClose, ...props
       <button
         type="button"
         onClick={handleClose}
-        className="absolute right-4 top-4 z-20 rounded-md p-1.5 text-[#a09d96] hover:text-white bg-[#252320] hover:bg-[#322f2b] transition cursor-pointer active:scale-95"
+        className="absolute right-4 top-4 z-30 rounded-lg p-1.5 text-white/80 hover:text-white hover:bg-white/20 bg-black/30 backdrop-blur-xs transition cursor-pointer active:scale-95 border border-white/10"
         title="Close dialog"
       >
-        <X className="h-4.5 w-4.5" />
+        <X className="h-4 w-4" />
         <span className="sr-only">Close</span>
       </button>
       {children}

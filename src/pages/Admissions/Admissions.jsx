@@ -436,8 +436,9 @@ function Admissions() {
           setOpen={setShowEmiDialog}
           admission={selectedAdmission}
           onAdmissionUpdated={(updated) => {
+            setSelectedAdmission(updated);
             setAdmissions((prev) =>
-              prev.map((a) => (String(a.admissionId || a.id) === String(updated.admissionId || updated.id) ? { ...a, ...updated } : a))
+              prev.map((a) => (String(a.admissionId || a.id || a.studentId) === String(updated.admissionId || updated.id || updated.studentId) ? { ...a, ...updated } : a))
             );
           }}
           onEmailReceiptTrigger={(data) => {

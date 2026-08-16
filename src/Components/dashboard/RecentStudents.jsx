@@ -85,7 +85,7 @@ function RecentStudents() {
                   <span className="text-[11px] text-[#8e8b82] font-medium hidden sm:inline-block">
                     {student.date}
                   </span>
-                  <Badge variant={student.status === "Active" ? "success" : "amber"}>
+                  <Badge variant={student.status === "Active" ? "success" : student.status === "Pending" ? "amber" : student.status === "Enquiry" ? "secondary" : "destructive"}>
                     {student.status}
                   </Badge>
                 </div>

@@ -116,11 +116,18 @@ function AdmissionTable({ admissions = [], onEdit, onDelete, onManageEmi, onView
                           ? "amber"
                           : "destructive"
                       }
+                      className={isEmi ? "cursor-pointer hover:opacity-80" : ""}
+                      onClick={() => isEmi && onManageEmi && onManageEmi(admission)}
                     >
                       {status}
                     </Badge>
                     {isEmi && (
-                      <span className={`block text-[11px] font-bold ${emiPaidCount >= emiTenure || isPaidStatus ? "text-[#00754A]" : "text-[#006241]"}`}>
+                      <span
+                        onClick={() => onManageEmi && onManageEmi(admission)}
+                        className={`block text-[11px] font-bold cursor-pointer hover:underline ${
+                          emiPaidCount >= emiTenure || isPaidStatus ? "text-[#00754A]" : "text-[#006241]"
+                        }`}
+                      >
                         💳 {emiPaidCount >= emiTenure || isPaidStatus ? `EMI Completed (${emiTenure}/${emiTenure} Paid 🎉)` : `${emiTenure} Mo EMI (${emiPaidCount}/${emiTenure} Paid)`}
                       </span>
                     )}
@@ -129,6 +136,18 @@ function AdmissionTable({ admissions = [], onEdit, onDelete, onManageEmi, onView
 
                 <TableCell className="text-right">
                   <div className="flex items-center justify-end gap-1.5">
+                    {isEmi && !isPaidStatus && (
+                      <Button
+                        variant="stripe"
+                        size="sm"
+                        onClick={() => onManageEmi && onManageEmi(admission)}
+                        className="h-8 px-2.5 text-xs gap-1 font-bold shadow-2xs"
+                      >
+                        <CreditCard className="h-3.5 w-3.5" />
+                        <span>Pay EMI</span>
+                      </Button>
+                    )}
+
                     <Button
                       variant="outline"
                       size="sm"
