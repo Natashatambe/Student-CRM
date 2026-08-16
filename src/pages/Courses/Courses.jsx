@@ -38,10 +38,11 @@ function Courses() {
   const [openDelete, setOpenDelete] = useState(false);
   const [courseToDelete, setCourseToDelete] = useState(null);
   const [search, setSearch] = useState("");
-
+  const [loading, setLoading] = useState(false);
 
   const loadCoursesFromBackend = async () => {
     try {
+      setLoading(true);
       const res = await getCourses();
       if (res && res.data) {
         let list = [];
@@ -67,6 +68,8 @@ function Courses() {
       }
     } catch (error) {
       console.log("Courses API loaded with fallback data:", error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -272,6 +275,7 @@ function Courses() {
 
           <CourseTable
             courses={filteredCourses}
+            loading={loading}
             onEdit={handleEditClick}
             onDelete={handleDeleteClick}
           />

@@ -22,6 +22,7 @@ import StripePaymentModal from "../../Components/common/StripePaymentModal";
 import PageHeader from "../../Components/common/PageHeader";
 import StatCard from "../../Components/common/StatCard";
 import StatusBadge from "../../Components/common/StatusBadge";
+import LoadingState from "../../Components/common/LoadingState";
 
 function Payments() {
   const { showToast } = useToast();
@@ -516,29 +517,33 @@ function Payments() {
             </div>
           </div>
 
-          <div className="rounded-xl border border-[#e6dfd8] overflow-hidden">
-            <DataGrid
-              table={paymentsTable}
-              recordCount={filteredPayments.length}
-              tableLayout={{ rowBorder: true, headerBackground: true }}
-              tableClassNames={{ base: "text-xs" }}
-            >
-              <DataGridContainer>
-                <DataGridScrollArea>
-                  <DataGridTable />
-                </DataGridScrollArea>
-                {filteredPayments.length === 0 ? (
-                  <div className="text-center py-12 text-[#6c6a64] font-medium text-sm">
-                    No fee transactions found matching your search.
-                  </div>
-                ) : (
-                  <div className="border-t border-[#e6dfd8] px-4 py-2">
-                    <DataGridPagination />
-                  </div>
-                )}
-              </DataGridContainer>
-            </DataGrid>
-          </div>
+          {loading ? (
+            <LoadingState message="Loading Fee Transactions & Payments..." rows={5} />
+          ) : (
+            <div className="rounded-xl border border-[#e6dfd8] overflow-hidden">
+              <DataGrid
+                table={paymentsTable}
+                recordCount={filteredPayments.length}
+                tableLayout={{ rowBorder: true, headerBackground: true }}
+                tableClassNames={{ base: "text-xs" }}
+              >
+                <DataGridContainer>
+                  <DataGridScrollArea>
+                    <DataGridTable />
+                  </DataGridScrollArea>
+                  {filteredPayments.length === 0 ? (
+                    <div className="text-center py-12 text-[#6c6a64] font-medium text-sm">
+                      No fee transactions found matching your search.
+                    </div>
+                  ) : (
+                    <div className="border-t border-[#e6dfd8] px-4 py-2">
+                      <DataGridPagination />
+                    </div>
+                  )}
+                </DataGridContainer>
+              </DataGrid>
+            </div>
+          )}
         </CardContent>
       </Card>
 

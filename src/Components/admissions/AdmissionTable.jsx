@@ -14,6 +14,7 @@ import {
   DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator,
 } from "@/Components/ui/dropdown-menu";
 import StatusBadge from "@/Components/common/StatusBadge";
+import LoadingState from "@/Components/common/LoadingState";
 
 const formatDateWithSpace = (rawDate) => {
   if (!rawDate) return "N/A";
@@ -27,7 +28,7 @@ const formatDateWithSpace = (rawDate) => {
   return str;
 };
 
-function AdmissionTable({ admissions = [], onEdit, onDelete, onManageEmi, onViewReceipt }) {
+function AdmissionTable({ admissions = [], loading = false, onEdit, onDelete, onManageEmi, onViewReceipt }) {
   const columns = useMemo(() => [
     {
       id: "admissionId",
@@ -205,6 +206,10 @@ function AdmissionTable({ admissions = [], onEdit, onDelete, onManageEmi, onView
     initialState: { pagination: { pageSize: 10, pageIndex: 0 } },
     getRowId: (row, idx) => String(row.admissionId || row.id || idx),
   });
+
+  if (loading) {
+    return <LoadingState message="Loading Admissions Desk Records..." rows={5} />;
+  }
 
   return (
     <div className="w-full rounded-xl border border-[#e6dfd8] bg-[#faf9f5] shadow-xs overflow-hidden">

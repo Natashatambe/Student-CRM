@@ -20,6 +20,7 @@ import {
 } from "@/Components/ui/dropdown-menu";
 import { cn, normalizeStatus } from "@/lib/utils";
 import StatusBadge from "@/Components/common/StatusBadge";
+import LoadingState from "@/Components/common/LoadingState";
 
 /* ─── helpers ─── */
 const formatDate = (rawDate) => {
@@ -91,7 +92,7 @@ const StatusPill = ({ status, onSelect }) => {
 };
 
 /* ─── Main Component ─── */
-function StudentTable({ students = [], onEdit, onDelete, onView, onStatusChange }) {
+function StudentTable({ students = [], loading = false, onEdit, onDelete, onView, onStatusChange }) {
   const columns = useMemo(() => [
     /* STU ID */
     {
@@ -304,6 +305,11 @@ function StudentTable({ students = [], onEdit, onDelete, onView, onStatusChange 
     initialState: { pagination: { pageSize: 10, pageIndex: 0 } },
     getRowId: (row, idx) => String(row.id || row.studentId || idx),
   });
+
+  /* ── Loading State ── */
+  if (loading) {
+    return <LoadingState message="Loading Student Partner Directory..." rows={5} />;
+  }
 
   /* ── Empty State ── */
   if (students.length === 0) {

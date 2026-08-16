@@ -402,6 +402,7 @@ function Admissions() {
 
           <AdmissionTable
             admissions={filteredAdmissions}
+            loading={loading}
             onEdit={handleEdit}
             onDelete={handleDeleteTrigger}
             onManageEmi={handleManageEmi}

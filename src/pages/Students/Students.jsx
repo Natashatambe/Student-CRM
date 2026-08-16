@@ -543,6 +543,7 @@ function Students() {
           {/* Student Table View */}
           <StudentTable
             students={filteredStudents}
+            loading={loading}
             onView={handleView}
             onEdit={handleEdit}
             onDelete={handleDeleteClick}

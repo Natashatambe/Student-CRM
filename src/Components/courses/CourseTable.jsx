@@ -11,8 +11,9 @@ import {
   DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator,
 } from "@/Components/ui/dropdown-menu";
 import StatusBadge from "@/Components/common/StatusBadge";
+import LoadingState from "@/Components/common/LoadingState";
 
-function CourseTable({ courses = [], onEdit, onDelete }) {
+function CourseTable({ courses = [], loading = false, onEdit, onDelete }) {
   const columns = useMemo(() => [
     {
       id: "courseId",
@@ -150,6 +151,10 @@ function CourseTable({ courses = [], onEdit, onDelete }) {
     initialState: { pagination: { pageSize: 10, pageIndex: 0 } },
     getRowId: (row, idx) => String(row.id || row.courseId || idx),
   });
+
+  if (loading) {
+    return <LoadingState message="Loading Curriculum Catalog Tracks..." rows={5} />;
+  }
 
   return (
     <div className="w-full rounded-xl border border-[#e6dfd8] bg-[#faf9f5] shadow-xs overflow-hidden">
