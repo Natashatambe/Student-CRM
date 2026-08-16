@@ -2,29 +2,31 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
+@custom-variant dark (&:is(.dark *));
+
 :root {
   /* Anthropic / Claude.com Warm Editorial Color Tokens */
   --canvas: #faf9f5;
   --ink: #141413;
-  
+
   --primary: #cc785c;
   --primary-active: #a9583e;
   --primary-disabled: #e6dfd8;
   --primary-foreground: #ffffff;
-  
+
   --accent-teal: #5db8a6;
   --accent-amber: #e8a55a;
-  
+
   --surface-soft: #f5f0e8;
   --surface-card: #efe9de;
   --surface-cream-strong: #e8e0d2;
   --surface-dark: #181715;
   --surface-dark-elevated: #252320;
   --surface-dark-soft: #1f1e1b;
-  
+
   --hairline: #e6dfd8;
   --hairline-soft: #ebe6df;
-  
+
   --background: #faf9f5;
   --foreground: #141413;
   --card: #efe9de;
@@ -53,6 +55,14 @@
   --sidebar-accent-foreground: #ffffff;
   --sidebar-border: #252320;
   --sidebar-ring: #cc785c;
+  --success: var(--color-emerald-500);
+  --success-foreground: var(--color-emerald-900);
+  --info: var(--color-violet-500);
+  --info-foreground: var(--color-violet-900);
+  --warning: var(--color-yellow-500);
+  --warning-foreground: var(--color-yellow-900);
+  --invert: var(--color-zinc-900);
+  --invert-foreground: var(--color-zinc-50);
 }
 
 html, body, #root {
@@ -185,3 +195,27 @@ h1, h2, h3, .font-serif-display {
 .text-on-dark { color: #faf9f5; }
 
 .border-hairline { border-color: #e6dfd8; }
+
+.dark {
+  --destructive-foreground: var(--color-red-600);
+  --success: var(--color-emerald-500);
+  --success-foreground: var(--color-emerald-600);
+  --info: var(--color-violet-500);
+  --info-foreground: var(--color-violet-600);
+  --warning: var(--color-yellow-500);
+  --warning-foreground: var(--color-yellow-600);
+  --invert: var(--color-zinc-700);
+  --invert-foreground: var(--color-zinc-50);
+}
+
+@theme inline {
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-info: var(--info);
+  --color-info-foreground: var(--info-foreground);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-invert: var(--invert);
+  --color-invert-foreground: var(--invert-foreground);
+}
