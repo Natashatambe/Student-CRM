@@ -7,6 +7,7 @@ import DeleteAdmissionDialog from "../../Components/admissions/DeleteAdmissionDi
 import EmiManagementDialog from "../../Components/admissions/EmiManagementDialog";
 import EmailReceiptModal from "../../Components/common/EmailReceiptModal";
 import PageHeader from "../../Components/common/PageHeader";
+import Pagination from "../../Components/common/Pagination";
 import { Button } from "../../Components/ui/button";
 import { Input } from "../../Components/ui/input";
 import { Card, CardContent } from "../../Components/ui/card";
@@ -23,8 +24,6 @@ import {
 import { getStudents } from "../../services/studentService";
 import { exportToExcel, exportToPDF } from "../../lib/exportUtils";
 import { sendReceiptEmailAPI } from "../../lib/receiptUtils";
-
-const INITIAL_ADMISSIONS = [];
 
 function Admissions() {
   const { showToast } = useToast();
@@ -46,6 +45,9 @@ function Admissions() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
 
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+
   const loadAdmissionsFromBackend = async () => {
     try {
       setLoading(true);
@@ -58,6 +60,9 @@ function Admissions() {
 
       if (admRes.status === "fulfilled" && admRes.value?.data) {
         let list = Array.isArray(admRes.value.data) ? admRes.value.data : (admRes.value.data.data || []);
+        // Sort DESCENDING (latest admission entry first)
+        list.sort((a, b) => Number(b.admissionId || b.id || 0) - Number(a.admissionId || a.id || 0));
+
         const enriched = list.map((a) => {
           let email = a.studentEmail || a.student?.email || a.email || "";
           let sName = a.studentName || a.student?.name || "";
@@ -95,6 +100,10 @@ function Admissions() {
     if (q) setSearch(q);
   }, []);
 
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search, statusFilter]);
+
   const handleAddSuccess = async (newRecord) => {
     const sId = Number(newRecord.studentId);
     const cId = Number(newRecord.courseId);
@@ -129,10 +138,10 @@ function Admissions() {
       admissionId: (createdRecord && (createdRecord.admissionId || createdRecord.id)) || (admissions.length > 0 ? Math.max(...admissions.map(a => Number(a.admissionId || a.id || 0))) + 1 : 101),
     };
 
+    // Prepend to top of list (latest entry first)
     setAdmissions((prev) => [record, ...prev.filter((a) => String(a.admissionId || a.id) !== String(record.admissionId || record.id))]);
     setShowAddDialog(false);
 
-    // Auto-trigger email receipt modal
     const receiptData = {
       id: `TXN-${Math.floor(1000 + Math.random() * 9000)}`,
       studentName: record.studentName,
@@ -261,6 +270,7 @@ function Admissions() {
     showToast("Exported PDF Report Sheet!", "success");
   };
 
+  // Filter admissions
   const filteredAdmissions = admissions.filter((adm, index) => {
     const studentName = adm.studentName || (adm.student ? (adm.student.name || `${adm.student.firstName || ""} ${adm.student.lastName || ""}`).trim() : "");
     const courseName = adm.course?.courseName || adm.course?.name || adm.courseName || "";
@@ -306,6 +316,10 @@ function Admissions() {
       showToast("Cleared all admission records!", "info");
     }
   };
+
+  const totalElements = filteredAdmissions.length;
+  const totalPages = Math.ceil(totalElements / pageSize) || 1;
+  const paginatedAdmissions = filteredAdmissions.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   return (
     <Layout>
@@ -395,11 +409,23 @@ function Admissions() {
           </div>
 
           <AdmissionTable
-            admissions={filteredAdmissions}
+            admissions={paginatedAdmissions}
             onEdit={handleEdit}
             onDelete={handleDeleteTrigger}
             onManageEmi={handleManageEmi}
             onViewReceipt={handleViewReceipt}
+          />
+
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            pageSize={pageSize}
+            totalElements={totalElements}
+            onPageChange={setCurrentPage}
+            onPageSizeChange={(newSize) => {
+              setPageSize(newSize);
+              setCurrentPage(1);
+            }}
           />
         </CardContent>
       </Card>

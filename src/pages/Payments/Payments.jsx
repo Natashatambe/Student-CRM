@@ -17,6 +17,7 @@ import StripePaymentModal from "../../Components/common/StripePaymentModal";
 import PageHeader from "../../Components/common/PageHeader";
 import StatCard from "../../Components/common/StatCard";
 import StatusBadge from "../../Components/common/StatusBadge";
+import Pagination from "../../Components/common/Pagination";
 
 function Payments() {
   const { showToast } = useToast();
@@ -31,6 +32,10 @@ function Payments() {
   const [selectedReceipt, setSelectedReceipt] = useState(null);
   const [openStripeModal, setOpenStripeModal] = useState(false);
   const [stripePaymentData, setStripePaymentData] = useState(null);
+
+  const [statusTab, setStatusTab] = useState("all");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
 
   const [newPayment, setNewPayment] = useState({
     studentName: "",
@@ -66,6 +71,10 @@ function Payments() {
     const q = params.get("search");
     if (q) setSearch(q);
   }, []);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search, statusTab]);
 
   const handleLaunchStripeDirect = (pData = null) => {
     const dataToUse = pData || {
@@ -179,8 +188,6 @@ function Payments() {
     exportToPDF("Fee Transactions & Receipts Report", headers, rows, "Fee_Transactions_PDF");
     showToast("Exported PDF Report Sheet!", "success");
   };
-
-  const [statusTab, setStatusTab] = useState("all");
 
   const getCombinedPaymentsList = () => {
     const list = [];
@@ -300,6 +307,10 @@ function Payments() {
 
   const totalPotential = totalCollected + pendingDues;
   const collectionRate = totalPotential > 0 ? ((totalCollected / totalPotential) * 100).toFixed(1) : "100.0";
+
+  const totalElements = filteredPayments.length;
+  const totalPages = Math.ceil(totalElements / pageSize) || 1;
+  const paginatedPayments = filteredPayments.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   return (
     <Layout>
@@ -435,7 +446,7 @@ function Payments() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredPayments.map((p) => (
+              {paginatedPayments.map((p) => (
                 <TableRow key={p.id} className={p.status === "Pending" ? "bg-[#efe9de]/40" : "hover:bg-[#efe9de]/50"}>
                   <TableCell className="font-mono text-xs font-bold text-[#cc785c]">{p.id}</TableCell>
                   <TableCell className="font-semibold text-[#141413] text-xs md:text-sm">
@@ -476,6 +487,18 @@ function Payments() {
               ))}
             </TableBody>
           </Table>
+
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            pageSize={pageSize}
+            totalElements={totalElements}
+            onPageChange={setCurrentPage}
+            onPageSizeChange={(newSize) => {
+              setPageSize(newSize);
+              setCurrentPage(1);
+            }}
+          />
         </CardContent>
       </Card>
 

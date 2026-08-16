@@ -7,13 +7,14 @@ import DeleteStudentDialog from "../../Components/students/DeleteStudentDialog";
 import ViewStudentDialog from "../../Components/students/ViewStudentDialog";
 import StudentStatsCard from "../../Components/students/StudentStatsCard";
 import PageHeader from "../../Components/common/PageHeader";
+import Pagination from "../../Components/common/Pagination";
 import { Button } from "../../Components/ui/button";
 import { Input } from "../../Components/ui/input";
 import { Select } from "../../Components/ui/select";
 import { Card, CardContent } from "../../Components/ui/card";
 import { Tabs, TabsList, TabsTrigger } from "../../Components/ui/tabs";
 import { useToast } from "../../Components/ui/toast";
-import { Plus, Search, Download, FileSpreadsheet, FileText, X, Filter, GraduationCap } from "lucide-react";
+import { Plus, Search, Download, FileSpreadsheet, FileText, X, Filter } from "lucide-react";
 import {
   getStudents,
   addStudent,
@@ -51,6 +52,9 @@ function Students() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [courseFilter, setCourseFilter] = useState("all");
 
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+
   const loadStudentsFromBackend = async () => {
     try {
       setLoading(true);
@@ -60,7 +64,9 @@ function Students() {
         if (Array.isArray(res.data)) list = res.data;
         else if (Array.isArray(res.data.data)) list = res.data.data;
 
-        const mapped = list.map((s, idx) => normalizeStudentRecord(s, idx));
+        // Ensure DESCENDING ORDER (latest entry first)
+        const sortedList = [...list].sort((a, b) => Number(b.id || b.studentId || 0) - Number(a.id || a.studentId || 0));
+        const mapped = sortedList.map((s, idx) => normalizeStudentRecord(s, idx));
         setStudents(mapped);
       }
     } catch (error) {
@@ -76,6 +82,10 @@ function Students() {
     const q = params.get("search");
     if (q) setSearch(q);
   }, []);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search, statusFilter, courseFilter]);
 
   const handleAddStudent = async (newStudent) => {
     const payload = {
@@ -112,7 +122,7 @@ function Students() {
       ...payload
     };
 
-    // Instant optimistic local state update for 0ms dynamic display on screen
+    // Prepend to top of list (latest entry first)
     setStudents((prev) => {
       const sId = effectiveStudentObj.id || effectiveStudentObj.studentId;
       const exists = prev.some((s) => String(s.id || s.studentId) === String(sId));
@@ -130,7 +140,6 @@ function Students() {
       ];
     });
 
-    // ONLY ADD TO ADMISSIONS DESK IF STUDENT STATUS IS ACTIVE
     if (newStudent.status === "Active") {
       try {
         const realCourseTrack = effectiveStudentObj.course || newStudent.course || "Java Full Stack";
@@ -155,7 +164,7 @@ function Students() {
         console.log("Auto-admission error for active student:", err);
       }
     } else {
-      showToast(`Student registered for ${newStudent.status || "Enquiry"} purpose (Admission on hold until status is updated to Active)`, "info");
+      showToast(`Student registered for ${newStudent.status || "Enquiry"} purpose`, "info");
     }
 
     await loadStudentsFromBackend();
@@ -173,10 +182,7 @@ function Students() {
 
   const handleUpdateStudent = async (updatedStudent) => {
     const sId = updatedStudent.id || updatedStudent.studentId;
-    if (!sId) {
-      console.error("Missing student ID for update operation.");
-      return;
-    }
+    if (!sId) return;
 
     const normStatus = normalizeStatus(updatedStudent.status);
     const previousStudent = students.find((s) => String(s.id || s.studentId) === String(sId));
@@ -248,57 +254,10 @@ function Students() {
           student: { id: Number(sId), name: payload.name, email: payload.email },
           course: { id: cId, name: realCourseTrack },
         }).catch((err) => console.log("Admission add error:", err));
-        showToast(`🎉 Student ${payload.name} Approved for ${realCourseTrack} (${pType})! Dynamically added to Admissions Desk.`, "success");
+        showToast(`🎉 Student ${payload.name} Approved for ${realCourseTrack}!`, "success");
       } catch (err) {
         console.log("Auto-admission on status update error:", err);
       }
-    } else if (hasAdmission && isNowActive) {
-      try {
-        const selectedFee = Number(updatedStudent.totalFee || updatedStudent.fees || 50000);
-        const pType = updatedStudent.paymentType || "Full";
-        const eTenure = Number(updatedStudent.emiTenure || 3);
-        const eMonthly = pType === "EMI" ? Number(updatedStudent.emiMonthlyAmount || Math.round(selectedFee / eTenure)) : null;
-        const admId = previousStudent.admission?.id || previousStudent.admissionId;
-
-        if (admId) {
-          await updateAdmission(admId, {
-            studentId: Number(sId),
-            courseId: cId,
-            studentName: payload.name,
-            studentEmail: payload.email,
-            courseName: realCourseTrack,
-            totalFee: selectedFee,
-            paymentStatus: updatedStudent.paymentStatus || (pType === "EMI" ? "Partial" : "Paid"),
-            paymentType: pType,
-            emiTenure: pType === "EMI" ? eTenure : null,
-            emiMonthlyAmount: eMonthly,
-            student: { id: Number(sId), name: payload.name },
-            course: { id: cId, name: realCourseTrack },
-          }).catch((err) => console.log("Admission update error:", err));
-        }
-      } catch (err) {
-        console.log("Error syncing admission course name:", err);
-      }
-      showToast(`Updated record & status (${normStatus}) for ${payload.name}!`, "success");
-    } else if (hasAdmission && !isNowActive) {
-      try {
-        const admId = previousStudent.admission?.id || previousStudent.admissionId;
-        if (admId) {
-          await updateAdmission(admId, {
-            studentId: Number(sId),
-            courseId: cId,
-            studentName: payload.name,
-            studentEmail: payload.email,
-            courseName: realCourseTrack,
-            paymentStatus: "Pending",
-            student: { id: Number(sId), name: payload.name },
-            course: { id: cId, name: realCourseTrack },
-          }).catch((err) => console.log("Admission update error on hold:", err));
-        }
-      } catch (err) {
-        console.log("Error updating admission status on student hold:", err);
-      }
-      showToast(`Student record saved as ${normStatus} (On Hold / Pending)`, "info");
     } else {
       showToast(`Updated student status to ${normStatus} for ${payload.name}`, "success");
     }
@@ -379,6 +338,7 @@ function Students() {
     showToast(`Downloaded PDF report for ${inactiveList.length} Inactive Student(s)!`, "success");
   };
 
+  // Filter students (sorted DESC by ID)
   const filteredStudents = students.filter((student, index) => {
     const displayName = student.name || `${student.firstName || ""} ${student.lastName || ""}`.trim();
     const formattedId = student.formattedId || `stu-${101 + index}`;
@@ -403,6 +363,11 @@ function Students() {
 
     return matchesSearch && matchesStatus && matchesCourse;
   });
+
+  // Calculate Pagination Slices
+  const totalElements = filteredStudents.length;
+  const totalPages = Math.ceil(totalElements / pageSize) || 1;
+  const paginatedStudents = filteredStudents.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   return (
     <Layout>
@@ -452,7 +417,7 @@ function Students() {
         }
       />
 
-      {/* Interactive Responsive Stats Grid */}
+      {/* Stats Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-8">
         <StudentStatsCard
           title="Total Students"
@@ -480,12 +445,11 @@ function Students() {
         />
       </div>
 
-      {/* Main Table & Filter Card */}
+      {/* Main Table Card */}
       <Card className="bg-[#efe9de] border-[#e6dfd8]">
         <CardContent className="p-4 md:p-6 space-y-6">
-          {/* Controls Bar: Search, Course Filter & Status Tabs */}
+          {/* Controls Bar */}
           <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-            {/* Search Input & Course Dropdown */}
             <div className="flex flex-col sm:flex-row items-center gap-2 flex-1 max-w-2xl">
               <div className="relative flex-1 w-full">
                 <Search className="absolute left-3.5 top-3 h-4 w-4 text-[#8e8b82]" />
@@ -508,7 +472,6 @@ function Students() {
                 )}
               </div>
 
-              {/* Course Track Select Filter */}
               <div className="w-full sm:w-56 shrink-0">
                 <Select
                   value={courseFilter}
@@ -525,7 +488,6 @@ function Students() {
               </div>
             </div>
 
-            {/* Status Filter Tabs (Scrollable on Mobile) */}
             <div className="overflow-x-auto pb-1 lg:pb-0 shrink-0">
               <Tabs value={statusFilter} onValueChange={setStatusFilter}>
                 <TabsList className="bg-[#faf9f5] border-[#e6dfd8]">
@@ -571,7 +533,7 @@ function Students() {
                     Query: "{search}"
                   </span>
                 )}
-                <span className="text-[#8e8b82]">({filteredStudents.length} results)</span>
+                <span className="text-[#8e8b82]">({totalElements} results)</span>
               </div>
               <button
                 type="button"
@@ -587,9 +549,9 @@ function Students() {
             </div>
           )}
 
-          {/* Responsive Student Table & Mobile Card View */}
+          {/* Student Table View */}
           <StudentTable
-            students={filteredStudents}
+            students={paginatedStudents}
             onView={handleView}
             onEdit={handleEdit}
             onDelete={handleDeleteClick}
@@ -597,10 +559,23 @@ function Students() {
               handleUpdateStudent({ ...student, status: newStatus })
             }
           />
+
+          {/* Pagination Controls */}
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            pageSize={pageSize}
+            totalElements={totalElements}
+            onPageChange={setCurrentPage}
+            onPageSizeChange={(newSize) => {
+              setPageSize(newSize);
+              setCurrentPage(1);
+            }}
+          />
         </CardContent>
       </Card>
 
-      {/* View Details Dialog */}
+      {/* Dialogs */}
       <ViewStudentDialog
         open={openView}
         setOpen={setOpenView}
@@ -614,14 +589,12 @@ function Students() {
         }}
       />
 
-      {/* Add Dialog */}
       <AddStudentDialog
         open={openAdd}
         setOpen={setOpenAdd}
         onStudentAdded={handleAddStudent}
       />
 
-      {/* Edit Dialog */}
       <EditStudentDialog
         open={openEdit}
         setOpen={setOpenEdit}
@@ -629,7 +602,6 @@ function Students() {
         onStudentUpdated={handleUpdateStudent}
       />
 
-      {/* Delete Confirmation Dialog */}
       <DeleteStudentDialog
         open={openDelete}
         setOpen={setOpenDelete}

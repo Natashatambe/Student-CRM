@@ -6,6 +6,7 @@ import AddCourseDialog from "../../Components/courses/AddCourseDialog";
 import EditCourseDialog from "../../Components/courses/EditCourseDialog";
 import DeleteCourseDialog from "../../Components/courses/DeleteCourseDialog";
 import PageHeader from "../../Components/common/PageHeader";
+import Pagination from "../../Components/common/Pagination";
 import { Button } from "../../Components/ui/button";
 import { Input } from "../../Components/ui/input";
 import { Card, CardContent } from "../../Components/ui/card";
@@ -23,12 +24,12 @@ function Courses() {
   const { showToast } = useToast();
 
   const [courses, setCourses] = useState([
-    { id: 1, name: "Java Full Stack", courseName: "Java Full Stack", duration: "6 Months", fees: 45000, fee: 45000, status: "Active", instructor: "Instructor" },
-    { id: 2, name: "MERN STACK", courseName: "MERN STACK", duration: "3 Months", fees: 40000, fee: 40000, status: "Active", instructor: "Instructor" },
-    { id: 3, name: "Python Masterclass", courseName: "Python Masterclass", duration: "4 Months", fees: 45000, fee: 45000, status: "Active", instructor: "Dr. Deshmukh" },
-    { id: 4, name: "Node.js & Express Masterclass", courseName: "Node.js & Express Masterclass", duration: "5 Months", fees: 42000, fee: 42000, status: "Active", instructor: "Instructor" },
-    { id: 5, name: "Data ANALYST", courseName: "Data ANALYST", duration: "3 Months", fees: 35000, fee: 35000, status: "Active", instructor: "Instructor" },
     { id: 6, name: "React JS Track", courseName: "React JS Track", duration: "3 Months", fees: 30000, fee: 30000, status: "Active", instructor: "Instructor" },
+    { id: 5, name: "Data ANALYST", courseName: "Data ANALYST", duration: "3 Months", fees: 35000, fee: 35000, status: "Active", instructor: "Instructor" },
+    { id: 4, name: "Node.js & Express Masterclass", courseName: "Node.js & Express Masterclass", duration: "5 Months", fees: 42000, fee: 42000, status: "Active", instructor: "Instructor" },
+    { id: 3, name: "Python Masterclass", courseName: "Python Masterclass", duration: "4 Months", fees: 45000, fee: 45000, status: "Active", instructor: "Dr. Deshmukh" },
+    { id: 2, name: "MERN STACK", courseName: "MERN STACK", duration: "3 Months", fees: 40000, fee: 40000, status: "Active", instructor: "Instructor" },
+    { id: 1, name: "Java Full Stack", courseName: "Java Full Stack", duration: "6 Months", fees: 45000, fee: 45000, status: "Active", instructor: "Instructor" },
   ]);
 
   const [openAdd, setOpenAdd] = useState(false);
@@ -37,6 +38,9 @@ function Courses() {
   const [openDelete, setOpenDelete] = useState(false);
   const [courseToDelete, setCourseToDelete] = useState(null);
   const [search, setSearch] = useState("");
+
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
 
   const loadCoursesFromBackend = async () => {
     try {
@@ -59,6 +63,8 @@ function Courses() {
             status: c.status || "Active",
           };
         });
+        // Sort DESCENDING (latest course track first)
+        mapped.sort((a, b) => Number(b.id || 0) - Number(a.id || 0));
         setCourses(mapped);
       }
     } catch (error) {
@@ -72,6 +78,10 @@ function Courses() {
     const q = params.get("search");
     if (q) setSearch(q);
   }, []);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search]);
 
   const handleAddCourse = async (newCourse) => {
     const numFees = Number(String(newCourse.fees).replace(/[^0-9]/g, "")) || 0;
@@ -203,6 +213,10 @@ function Courses() {
     );
   });
 
+  const totalElements = filteredCourses.length;
+  const totalPages = Math.ceil(totalElements / pageSize) || 1;
+  const paginatedCourses = filteredCourses.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+
   return (
     <Layout>
       {/* Header */}
@@ -265,9 +279,21 @@ function Courses() {
           </div>
 
           <CourseTable
-            courses={filteredCourses}
+            courses={paginatedCourses}
             onEdit={handleEditClick}
             onDelete={handleDeleteClick}
+          />
+
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            pageSize={pageSize}
+            totalElements={totalElements}
+            onPageChange={setCurrentPage}
+            onPageSizeChange={(newSize) => {
+              setPageSize(newSize);
+              setCurrentPage(1);
+            }}
           />
         </CardContent>
       </Card>
