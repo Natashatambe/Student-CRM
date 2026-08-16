@@ -147,11 +147,11 @@ function AdmissionTable({ admissions = [], onEdit, onDelete, onManageEmi, onView
                       variant="outline"
                       size="sm"
                       onClick={() => onViewReceipt && onViewReceipt(admission)}
-                      className="h-8 px-2.5 text-xs gap-1 border-[#00754A]/30 text-[#006241] bg-[#d4e9e2]/30 hover:bg-[#d4e9e2]"
+                      className="h-8 px-2.5 text-xs gap-1 border-[#e6dfd8] text-[#141413] bg-[#faf9f5] hover:bg-[#efe9de]"
                       title="Open Gmail Web Composer for Student Receipt"
                     >
-                      <Mail className="h-3.5 w-3.5" />
-                      <span className="font-semibold hidden sm:inline">Open Gmail Web</span>
+                      <Mail className="h-3.5 w-3.5 text-[#cc785c]" />
+                      <span className="font-semibold hidden sm:inline">Receipt Email</span>
                     </Button>
 
                     <DropdownMenu>

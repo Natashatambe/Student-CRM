@@ -391,7 +391,7 @@ function StudentTable({ students = [], onEdit, onDelete, onView, onStatusChange 
                           <span className="font-mono font-bold text-[#cc785c] text-[11px] bg-[#faf9f5] border border-[#e6dfd8] px-1.5 py-0.5 rounded-md shadow-2xs">
                             {admIdStr}
                           </span>
-                          <span className="font-serif-display font-bold text-[#141413] text-sm">
+                          <span className="font-bold text-[#141413] text-xs md:text-sm tracking-tight">
                             ₹{feeNum.toLocaleString()}
                           </span>
                         </div>
