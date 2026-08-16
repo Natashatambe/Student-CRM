@@ -1,13 +1,13 @@
 import { useState } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogBody, DialogFooter } from "../ui/dialog";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetFooter } from "../ui/sheet";
 import { Button } from "../ui/button";
-import { Badge } from "../ui/badge";
 import { Select } from "../ui/select";
 import { useToast } from "../ui/toast";
 import { Calendar, DollarSign, CheckCircle2, Clock, CreditCard, Sparkles, Send, Download } from "lucide-react";
 import api from "../../services/api";
 import { generatePaymentReceiptPDF, sendReceiptEmailAPI } from "../../lib/receiptUtils";
 import StripePaymentModal from "../common/StripePaymentModal";
+import StatusBadge from "../common/StatusBadge";
 
 function EmiManagementDialog({ open, setOpen, admission, onAdmissionUpdated, onEmailReceiptTrigger }) {
   if (!admission) return null;
@@ -15,7 +15,6 @@ function EmiManagementDialog({ open, setOpen, admission, onAdmissionUpdated, onE
   const { showToast } = useToast();
   const [loading, setLoading] = useState(false);
   const [payMethod, setPayMethod] = useState("Stripe Test Gateway");
-  const [selectedInst, setSelectedInst] = useState(null);
   const [openStripeModal, setOpenStripeModal] = useState(false);
   const [stripePaymentData, setStripePaymentData] = useState(null);
 
@@ -165,133 +164,125 @@ function EmiManagementDialog({ open, setOpen, admission, onAdmissionUpdated, onE
 
   return (
     <>
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent onClose={handleClose} className="max-w-2xl">
-          <DialogHeader className="bg-[#1E3932] text-white p-5 pr-14 border-b border-[#2d5248]">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-xl bg-[#cba258] text-white flex items-center justify-center font-bold shrink-0">
-                  <CreditCard className="h-5 w-5" />
+      <Sheet open={open} onOpenChange={setOpen}>
+        <SheetContent side="right" className="sm:max-w-2xl" onClose={handleClose}>
+          <SheetHeader>
+            <SheetTitle>
+              <CreditCard className="h-5 w-5 text-[#cc785c]" />
+              EMI Installments & Plan Manager
+              <span className="text-[10px] px-2 py-0.5 bg-[#cc785c] text-white rounded-full font-sans font-bold ml-1">
+                {tenure} Months Plan
+              </span>
+            </SheetTitle>
+            <SheetDescription>
+              Track monthly dues, installment schedule, and record student payments for {admission.studentName}.
+            </SheetDescription>
+          </SheetHeader>
+
+          <div className="flex flex-col flex-1 justify-between overflow-y-auto space-y-4 py-1">
+            <div className="space-y-4">
+              {/* Stat Summary Cards */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 bg-[#efe9de] border border-[#e6dfd8] rounded-xl p-3.5">
+                <div>
+                  <span className="text-[10px] font-bold text-[#6c6a64] uppercase block">Total Course Fee</span>
+                  <span className="text-base font-bold text-[#141413] tracking-tight">₹{(admission.totalFee || 0).toLocaleString()}</span>
+                </div>
+
+                <div>
+                  <span className="text-[10px] font-bold text-[#6c6a64] uppercase block">Monthly EMI</span>
+                  <span className="text-base font-bold text-[#cc785c] tracking-tight">₹{monthlyFee.toLocaleString()} / mo</span>
+                </div>
+
+                <div>
+                  <span className="text-[10px] font-bold text-[#6c6a64] uppercase block">Installment Status</span>
+                  <span className="text-base font-bold text-[#00754A] tracking-tight">
+                    {paidCount} / {tenure} Paid
+                  </span>
+                </div>
+              </div>
+
+              {/* Student & Course Details Bar */}
+              <div className="flex flex-wrap items-center justify-between gap-2 text-xs bg-[#faf9f5] border border-[#e6dfd8] rounded-xl p-3 text-[#141413]">
+                <div>
+                  <span className="font-semibold text-[#8e8b82]">Student: </span>
+                  <strong className="text-[#141413]">{admission.studentName}</strong> ({admission.student?.email || "student@gmail.com"})
                 </div>
                 <div>
-                  <DialogTitle className="text-white text-xl font-bold flex items-center gap-2">
-                    EMI Installments & Plan Manager
-                    <Badge variant="amber" className="text-[10px] px-2 py-0.5 bg-[#cba258] text-white border-0 font-sans ml-1">
-                      {tenure} Months Plan
-                    </Badge>
-                  </DialogTitle>
-                  <DialogDescription className="text-[#d4e9e2] text-xs mt-0.5">
-                    Track monthly dues, installment schedule, and record student payments
-                  </DialogDescription>
+                  <span className="font-semibold text-[#8e8b82]">Course Track: </span>
+                  <strong className="text-[#cc785c]">{admission.courseName}</strong>
                 </div>
               </div>
-            </div>
-          </DialogHeader>
 
-          <DialogBody className="space-y-5 pt-2">
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 bg-[#faf6ee] border border-[#cba258]/30 rounded-xl p-4">
-              <div>
-                <span className="text-[11px] font-bold text-slate-500 uppercase block">Total Course Fee</span>
-                <span className="text-lg font-extrabold text-[#1E3932]">₹{(admission.totalFee || 0).toLocaleString()}</span>
+              {/* Payment Gateway Selector */}
+              <div className="space-y-1">
+                <label className="text-[11px] font-bold text-[#141413] uppercase tracking-wider">
+                  Payment Gateway Checkout
+                </label>
+                <Select value={payMethod} onChange={(e) => setPayMethod(e.target.value)}>
+                  <option value="Stripe Test Gateway">Stripe Test Gateway (Credit / Debit Card)</option>
+                  <option value="UPI / GPay">UPI / GPay / PhonePe</option>
+                  <option value="Bank Transfer">Bank Transfer / NEFT</option>
+                </Select>
               </div>
 
-              <div>
-                <span className="text-[11px] font-bold text-slate-500 uppercase block">Monthly EMI</span>
-                <span className="text-lg font-extrabold text-[#00754A]">₹{monthlyFee.toLocaleString()} / mo</span>
-              </div>
-
-              <div>
-                <span className="text-[11px] font-bold text-slate-500 uppercase block">Installment Status</span>
-                <span className="text-lg font-extrabold text-[#cba258]">
-                  {paidCount} / {tenure} Paid
-                </span>
-              </div>
-            </div>
-
-            <div className="flex items-center justify-between text-xs text-slate-700 bg-white border border-slate-200 rounded-lg p-3">
-              <div>
-                <span className="font-bold text-slate-500">Student: </span>
-                <strong className="text-[#1E3932]">{admission.studentName}</strong> ({admission.student?.email || "student@gmail.com"})
-              </div>
-              <div>
-                <span className="font-bold text-slate-500">Course Track: </span>
-                <strong className="text-[#00754A]">{admission.courseName}</strong>
-              </div>
-            </div>
-
-            <div className="space-y-1.5">
-              <label className="text-xs font-bold text-[#1E3932] uppercase">Payment Gateway for Checkout</label>
-              <Select value={payMethod} onChange={(e) => setPayMethod(e.target.value)}>
-                <option value="Stripe Test Gateway">Stripe Test Gateway (Credit / Debit Card)</option>
-                <option value="UPI / GPay">UPI / GPay / PhonePe</option>
-                <option value="Bank Transfer">Bank Transfer / NEFT</option>
-              </Select>
-            </div>
-
-            <div className="border border-slate-200 rounded-xl overflow-hidden text-xs">
-              <table className="w-full text-left border-collapse">
-                <thead>
-                  <tr className="bg-[#f8fafc] text-slate-700 font-bold border-b border-slate-200">
-                    <th className="p-3">Inst #</th>
-                    <th className="p-3">Due Date</th>
-                    <th className="p-3">Amount</th>
-                    <th className="p-3">Status</th>
-                    <th className="p-3 text-right">Action</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {schedule.map((item) => (
-                    <tr key={item.installmentNumber} className={item.status === "Paid" ? "bg-[#d4e9e2]/20" : ""}>
-                      <td className="p-3 font-bold text-[#1E3932]">Installment #{item.installmentNumber}</td>
-                      <td className="p-3 text-slate-600 font-medium">{item.dueDate}</td>
-                      <td className="p-3 font-extrabold text-[#006241]">₹{Number(item.amount).toLocaleString()}</td>
-                      <td className="p-3">
-                        {item.status === "Paid" ? (
-                          <Badge variant="success" className="gap-1 text-[11px]">
-                            <CheckCircle2 className="h-3 w-3" /> Paid ({item.paidDate || "Paid"})
-                          </Badge>
-                        ) : (
-                          <Badge variant="warning" className="gap-1 text-[11px]">
-                            <Clock className="h-3 w-3" /> Due Pending
-                          </Badge>
-                        )}
-                      </td>
-                      <td className="p-3 text-right">
-                        {item.status === "Paid" ? (
-                          <Button
-                            size="xs"
-                            variant="outline"
-                            onClick={() => generatePaymentReceiptPDF({ ...item, studentName: admission.studentName, course: admission.courseName })}
-                            className="gap-1.5 text-xs border-[#e6dfd8] text-[#141413] hover:bg-[#efe9de] font-medium"
-                          >
-                            <Download className="h-3.5 w-3.5 text-[#00754A]" /> Receipt
-                          </Button>
-                        ) : (
-                          <Button
-                            size="xs"
-                            variant="stripe"
-                            disabled={loading}
-                            onClick={() => triggerStripeCheckout(item)}
-                            className="gap-1.5 text-xs font-bold px-3 py-1 rounded-lg inline-flex items-center shadow-2xs"
-                          >
-                            <CreditCard className="h-3.5 w-3.5 shrink-0" /> Pay ₹{Number(item.amount).toLocaleString()}
-                          </Button>
-                        )}
-                      </td>
+              {/* Schedule Table */}
+              <div className="border border-[#e6dfd8] rounded-xl overflow-hidden text-xs bg-[#faf9f5]">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="bg-[#efe9de] text-[#141413] font-bold border-b border-[#e6dfd8] uppercase text-[10px] tracking-wider">
+                      <th className="p-3">Inst #</th>
+                      <th className="p-3">Due Date</th>
+                      <th className="p-3">Amount</th>
+                      <th className="p-3">Status</th>
+                      <th className="p-3 text-right">Action</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody className="divide-y divide-[#e6dfd8]">
+                    {schedule.map((item) => (
+                      <tr key={item.installmentNumber} className={item.status === "Paid" ? "bg-[#efe9de]/40" : "hover:bg-[#efe9de]/30"}>
+                        <td className="p-3 font-bold text-[#141413]">Installment #{item.installmentNumber}</td>
+                        <td className="p-3 text-[#6c6a64] font-medium whitespace-nowrap">{item.dueDate}</td>
+                        <td className="p-3 font-bold text-[#141413] tracking-tight">₹{Number(item.amount).toLocaleString()}</td>
+                        <td className="p-3">
+                          <StatusBadge status={item.status === "Paid" ? "Completed" : "Pending"} />
+                        </td>
+                        <td className="p-3 text-right whitespace-nowrap">
+                          {item.status === "Paid" ? (
+                            <Button
+                              size="xs"
+                              variant="outline"
+                              onClick={() => generatePaymentReceiptPDF({ ...item, studentName: admission.studentName, course: admission.courseName })}
+                              className="gap-1 text-xs border-[#e6dfd8] bg-[#faf9f5] hover:bg-[#efe9de] text-[#141413] font-semibold"
+                            >
+                              <Download className="h-3.5 w-3.5 text-[#00754A]" /> Receipt
+                            </Button>
+                          ) : (
+                            <Button
+                              size="xs"
+                              variant="stripe"
+                              disabled={loading}
+                              onClick={() => triggerStripeCheckout(item)}
+                              className="gap-1.5 text-xs font-bold px-3 py-1 rounded-lg inline-flex items-center shadow-2xs bg-[#635bff] hover:bg-[#534ae4] text-white"
+                            >
+                              <CreditCard className="h-3.5 w-3.5 shrink-0" /> Pay ₹{Number(item.amount).toLocaleString()}
+                            </Button>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
-          </DialogBody>
 
-          <DialogFooter>
-            <Button variant="outline" onClick={handleClose}>
-              Close Manager
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+            <SheetFooter>
+              <Button variant="outline" onClick={handleClose} className="border-[#e6dfd8] bg-[#faf9f5]">
+                Close Manager
+              </Button>
+            </SheetFooter>
+          </div>
+        </SheetContent>
+      </Sheet>
 
       {openStripeModal && stripePaymentData && (
         <StripePaymentModal
