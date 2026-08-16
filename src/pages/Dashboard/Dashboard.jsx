@@ -9,14 +9,18 @@ import RecentStudents from "../../Components/dashboard/RecentStudents";
 import RecentActivities from "../../Components/dashboard/RecentActivities";
 
 import { getDashboardData } from "../../services/dashboardService";
+import { getStudents } from "../../services/studentService";
+import { getCourses } from "../../services/courseService";
+import { getAdmissions } from "../../services/admissionService";
+import { getPayments } from "../../services/paymentService";
 import { Users, GraduationCap, ClipboardList, CreditCard } from "lucide-react";
 
 function Dashboard() {
   const [dashboard, setDashboard] = useState({
-    totalStudents: 148,
-    totalCourses: 12,
-    totalAdmissions: 96,
-    totalRevenue: 485000,
+    totalStudents: 0,
+    totalCourses: 0,
+    totalAdmissions: 0,
+    totalRevenue: 0,
   });
 
   useEffect(() => {
@@ -33,7 +37,32 @@ function Dashboard() {
         }));
       }
     } catch (error) {
-      console.log("Dashboard loaded with preview metrics:", error);
+      console.log("Dashboard loaded preview metrics:", error);
+    }
+
+    try {
+      const [stdRes, crsRes, admRes, pmtRes] = await Promise.all([
+        getStudents().catch(() => null),
+        getCourses().catch(() => null),
+        getAdmissions().catch(() => null),
+        getPayments().catch(() => null),
+      ]);
+
+      const stdList = stdRes?.data ? (Array.isArray(stdRes.data) ? stdRes.data : stdRes.data.data || []) : [];
+      const crsList = crsRes?.data ? (Array.isArray(crsRes.data) ? crsRes.data : crsRes.data.data || []) : [];
+      const admList = admRes?.data ? (Array.isArray(admRes.data) ? admRes.data : admRes.data.data || []) : [];
+      const pmtList = pmtRes?.data ? (Array.isArray(pmtRes.data) ? pmtRes.data : pmtRes.data.data || []) : [];
+
+      const totalRev = pmtList.reduce((sum, p) => sum + Number(p.amount || 0), 0);
+
+      setDashboard((prev) => ({
+        totalStudents: stdList.length || prev.totalStudents || 0,
+        totalCourses: crsList.length || prev.totalCourses || 0,
+        totalAdmissions: admList.length || prev.totalAdmissions || 0,
+        totalRevenue: totalRev || prev.totalRevenue || 0,
+      }));
+    } catch (err) {
+      console.log("Dashboard aggregate metrics error:", err);
     }
   };
 

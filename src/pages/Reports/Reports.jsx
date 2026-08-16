@@ -3,7 +3,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../..
 import { Button } from "../../Components/ui/button";
 import { Progress } from "../../Components/ui/progress";
 import { useToast } from "../../Components/ui/toast";
-import { FileBarChart, Download, TrendingUp, BookOpen, Star, Coffee } from "lucide-react";
+import { FileBarChart, Download, TrendingUp, BookOpen, Star, FileSpreadsheet } from "lucide-react";
+import { exportToExcel, exportToPDF } from "../../lib/exportUtils";
 import {
   ResponsiveContainer,
   AreaChart,
@@ -36,8 +37,25 @@ const courseShare = [
 function Reports() {
   const { showToast } = useToast();
 
-  const handleExport = (type) => {
-    showToast(`Exported ${type} Starbucks Analytics Report`, "info");
+  const handleExportCSV = () => {
+    const dataToExport = monthlyData.map((d) => ({
+      Month: d.month,
+      Admissions: d.admissions,
+      "Revenue (INR)": d.revenue,
+    }));
+    exportToExcel(dataToExport, "Academy_Analytics_Report");
+    showToast("Exported Analytics Report to Excel Sheet!", "success");
+  };
+
+  const handleExportPDF = () => {
+    const headers = ["Month", "Student Enrollments", "Monthly Revenue"];
+    const rows = monthlyData.map((d) => [
+      d.month,
+      d.admissions,
+      `₹${d.revenue.toLocaleString()}`,
+    ]);
+    exportToPDF("Academy Analytics & Enrollment Trajectory", headers, rows, "Academy_Analytics_PDF_Sheet");
+    showToast("Exported PDF Report Sheet!", "success");
   };
 
   return (
@@ -55,11 +73,11 @@ function Reports() {
         </div>
 
         <div className="flex items-center gap-3">
-          <Button variant="outline" onClick={() => handleExport("CSV")} className="gap-2">
-            <Download className="h-4 w-4" /> Export CSV
+          <Button variant="outline" onClick={handleExportCSV} className="gap-2 bg-white border-slate-200">
+            <FileSpreadsheet className="h-4 w-4 text-[#00754A]" /> Export Excel
           </Button>
-          <Button onClick={() => handleExport("PDF")} variant="primary" className="shadow-md gap-2">
-            <Download className="h-4 w-4" /> Download PDF Report
+          <Button onClick={handleExportPDF} variant="primary" className="shadow-md gap-2">
+            <Download className="h-4 w-4" /> Download PDF Report Sheet
           </Button>
         </div>
       </div>

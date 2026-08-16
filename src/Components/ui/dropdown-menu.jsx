@@ -1,9 +1,20 @@
 import * as React from "react";
 import { cn } from "../../lib/utils";
 
-const DropdownMenu = ({ children }) => {
-  const [open, setOpen] = React.useState(false);
+const DropdownMenu = ({ children, open: controlledOpen, onOpenChange }) => {
+  const [internalOpen, setInternalOpen] = React.useState(false);
   const dropdownRef = React.useRef(null);
+
+  const isControlled = controlledOpen !== undefined;
+  const open = isControlled ? controlledOpen : internalOpen;
+
+  const setOpen = (val) => {
+    if (isControlled && onOpenChange) {
+      onOpenChange(val);
+    } else {
+      setInternalOpen(val);
+    }
+  };
 
   React.useEffect(() => {
     const handleClickOutside = (event) => {
@@ -13,7 +24,7 @@ const DropdownMenu = ({ children }) => {
     };
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
+  }, [isControlled, onOpenChange]);
 
   return (
     <div ref={dropdownRef} className="relative inline-block text-left">
@@ -50,15 +61,26 @@ const DropdownMenuContent = React.forwardRef(({ className, children, onClose, al
     )}
     {...props}
   >
-    {children}
+    {React.Children.map(children, (child) => {
+      if (!child) return null;
+      if (child.type === DropdownMenuItem) {
+        return React.cloneElement(child, {
+          onClose: child.props.onClose || onClose,
+        });
+      }
+      return child;
+    })}
   </div>
 ));
 DropdownMenuContent.displayName = "DropdownMenuContent";
 
-const DropdownMenuItem = React.forwardRef(({ className, children, onClick, destructive, ...props }, ref) => (
+const DropdownMenuItem = React.forwardRef(({ className, children, onClick, onClose, destructive, ...props }, ref) => (
   <div
     ref={ref}
-    onClick={onClick}
+    onClick={(e) => {
+      if (onClick) onClick(e);
+      if (onClose) onClose();
+    }}
     className={cn(
       "relative flex cursor-pointer select-none items-center rounded-lg px-3 py-2 text-sm font-medium outline-none transition-colors duration-150",
       destructive

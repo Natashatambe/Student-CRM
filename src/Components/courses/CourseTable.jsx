@@ -26,7 +26,7 @@ function CourseTable({ courses = [], onEdit, onDelete }) {
             </TableCell>
           </TableRow>
         ) : (
-          courses.map((course) => {
+          courses.map((course, index) => {
             const courseId = course.id ?? course.courseId ?? 0;
             const courseName = course.name || course.courseName || course.title || "Course Track";
             const duration = course.duration || "N/A";
@@ -43,9 +43,11 @@ function CourseTable({ courses = [], onEdit, onDelete }) {
 
             const status = course.status || "Active";
 
+            const formattedCourseId = `CRS-${courseId || (101 + index)}`;
+
             return (
-              <TableRow key={courseId}>
-                <TableCell className="font-medium text-[#141413]">#{courseId}</TableCell>
+              <TableRow key={courseId || index}>
+                <TableCell className="font-mono text-xs font-bold text-[#cc785c]">{formattedCourseId}</TableCell>
 
                 <TableCell>
                   <div className="flex items-center gap-3">

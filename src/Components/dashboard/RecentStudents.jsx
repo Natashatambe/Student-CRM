@@ -1,20 +1,43 @@
+import { useEffect, useState } from "react";
 import { Avatar, AvatarImage, AvatarFallback } from "../ui/avatar";
 import { Badge } from "../ui/badge";
 import { Card, CardHeader, CardTitle, CardContent } from "../ui/card";
 import { Button } from "../ui/button";
 import { useNavigate } from "react-router-dom";
 import { ArrowRight, UserCheck } from "lucide-react";
+import { getStudents } from "../../services/studentService";
 
 function RecentStudents() {
   const navigate = useNavigate();
+  const [students, setStudents] = useState([]);
 
-  const students = [
-    { name: "Natasha Tambe", course: "Java Full Stack", status: "Active", date: "Today" },
-    { name: "Rahul Sharma", course: "Python Masterclass", status: "Active", date: "Yesterday" },
-    { name: "Priya Patel", course: "React JS Track", status: "Pending", date: "2 days ago" },
-    { name: "Amit Joshi", course: "Data Science & AI", status: "Active", date: "3 days ago" },
-    { name: "Sneha Patil", course: "UI/UX Design", status: "Active", date: "4 days ago" },
-  ];
+  useEffect(() => {
+    loadRecentStudents();
+  }, []);
+
+  const loadRecentStudents = async () => {
+    try {
+      const res = await getStudents();
+      if (res && res.data) {
+        let list = [];
+        if (Array.isArray(res.data)) list = res.data;
+        else if (Array.isArray(res.data.data)) list = res.data.data;
+        if (list.length > 0) {
+          const recentList = [...list].reverse();
+          const mapped = recentList.slice(0, 6).map((s) => ({
+            id: s.id || s.studentId,
+            name: s.name || `${s.firstName || ""} ${s.lastName || ""}`.trim() || "Student Partner",
+            course: s.course || "Java Full Stack",
+            status: s.status || "Active",
+            date: "Recently Enrolled",
+          }));
+          setStudents(mapped);
+        }
+      }
+    } catch (err) {
+      console.log("Recent students loaded preview list:", err);
+    }
+  };
 
   return (
     <Card className="bg-[#efe9de] border-[#e6dfd8]">
@@ -36,9 +59,11 @@ function RecentStudents() {
         <div className="divide-y divide-[#e6dfd8]">
           {students.map((student, index) => {
             const initials = student.name
-              .split(" ")
-              .map((n) => n[0])
-              .join("");
+              ? student.name
+                  .split(" ")
+                  .map((n) => n[0])
+                  .join("")
+              : "ST";
             const dicebearAvatar = `https://api.dicebear.com/10.x/glyphs/svg?seed=${encodeURIComponent(student.name)}`;
 
             return (

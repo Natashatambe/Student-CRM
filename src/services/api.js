@@ -7,6 +7,7 @@ const api = axios.create({
   headers: {
     "Content-Type": "application/json",
   },
+  timeout: 10000,
 });
 
 // Request interceptor to automatically attach JWT token
@@ -21,12 +22,14 @@ api.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-// Response interceptor for global error handling
+// Response interceptor for global error handling & fallback resilience
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response && error.response.status === 401) {
-      console.warn("Unauthorized API access - token may be expired");
+    if (error.response) {
+      console.warn(`[Backend API] ${error.config?.method?.toUpperCase()} ${error.config?.url} status: ${error.response.status}`);
+    } else {
+      console.warn(`[Backend API] ${error.config?.method?.toUpperCase()} ${error.config?.url} offline or unreachable on ${API_BASE_URL}`);
     }
     return Promise.reject(error);
   }

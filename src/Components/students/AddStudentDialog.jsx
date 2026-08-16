@@ -2,6 +2,7 @@ import { useState } from "react";
 import StudentForm from "./StudentForm";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogBody, DialogFooter } from "../ui/dialog";
 import { Button } from "../ui/button";
+import { normalizeStatus } from "../../lib/utils";
 
 function AddStudentDialog({ open, setOpen, onStudentAdded }) {
   const [student, setStudent] = useState({
@@ -11,32 +12,48 @@ function AddStudentDialog({ open, setOpen, onStudentAdded }) {
     phone: "",
     gender: "Male",
     address: "",
-    course: "",
+    course: "Java Full Stack",
+    fees: 50000,
+    totalFee: 50000,
     status: "Active",
+    paymentType: "Full",
+    paymentStatus: "Paid",
   });
 
   const handleSave = (e) => {
     e.preventDefault();
 
-    if (!student.firstName || !student.lastName || !student.address || !student.gender) {
-      alert("Please fill required fields: First Name, Last Name, Address, and Gender");
+    const fName = student.firstName ? student.firstName.trim() : "";
+    const lName = student.lastName ? student.lastName.trim() : "";
+
+    if (!fName && !lName) {
+      alert("Please enter student name.");
       return;
     }
 
-    // Spring Boot Validation Rules (@Pattern 10 digits for phone, @Size >= 5 for address)
-    const cleanPhone = String(student.phone).replace(/[^0-9]/g, "").padEnd(10, "0").slice(0, 10);
-    const cleanAddress = student.address.trim().length >= 5 ? student.address.trim() : `${student.address.trim()} Street`;
+    const finalFirstName = fName || "New";
+    const finalLastName = lName || "Student";
+    const fullName = `${finalFirstName} ${finalLastName}`.trim();
+
+    const cleanPhone = student.phone ? String(student.phone).replace(/[^0-9]/g, "").padEnd(10, "0").slice(0, 10) : "9876543210";
+    const cleanAddress = student.address && student.address.trim().length > 0 ? student.address.trim() : "Main City Location";
 
     const payload = {
-      firstName: student.firstName,
-      lastName: student.lastName,
-      name: `${student.firstName} ${student.lastName}`.trim(),
-      email: student.email || `${student.firstName.toLowerCase()}@gmail.com`,
+      firstName: finalFirstName,
+      lastName: finalLastName,
+      name: fullName,
+      email: student.email ? student.email.trim() : `${finalFirstName.toLowerCase()}@gmail.com`,
       phone: cleanPhone,
       address: cleanAddress,
       gender: student.gender || "Male",
-      course: student.course || "General Track",
-      status: student.status || "Active",
+      course: student.course || "Java Full Stack",
+      totalFee: Number(student.totalFee || student.fees || 50000),
+      fees: Number(student.fees || student.totalFee || 50000),
+      paymentType: student.paymentType || "Full",
+      paymentStatus: student.paymentStatus || (student.paymentType === "EMI" ? "Partial" : "Paid"),
+      emiTenure: student.paymentType === "EMI" ? Number(student.emiTenure || 3) : null,
+      emiMonthlyAmount: student.paymentType === "EMI" ? Number(student.emiMonthlyAmount || Math.round((student.totalFee || 50000) / (student.emiTenure || 3))) : null,
+      status: normalizeStatus(student.status || "Active"),
     };
 
     if (onStudentAdded) {
@@ -50,8 +67,12 @@ function AddStudentDialog({ open, setOpen, onStudentAdded }) {
       phone: "",
       gender: "Male",
       address: "",
-      course: "",
+      course: "Java Full Stack",
+      fees: 50000,
+      totalFee: 50000,
       status: "Active",
+      paymentType: "Full",
+      paymentStatus: "Paid",
     });
 
     setOpen(false);
@@ -61,9 +82,9 @@ function AddStudentDialog({ open, setOpen, onStudentAdded }) {
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogContent onClose={() => setOpen(false)}>
         <DialogHeader>
-          <DialogTitle>Enroll New Student</DialogTitle>
+          <DialogTitle>Enroll New Student Partner</DialogTitle>
           <DialogDescription>
-            Register a new student partner with complete personal and course details.
+            Register a new student partner record. All missing fields will auto-fill cleanly.
           </DialogDescription>
         </DialogHeader>
 
@@ -80,8 +101,8 @@ function AddStudentDialog({ open, setOpen, onStudentAdded }) {
             >
               Cancel
             </Button>
-            <Button type="submit" variant="primary" className="shadow-md">
-              Save Student Record
+            <Button type="submit" variant="primary" className="bg-[#cc785c] hover:bg-[#a9583e] text-white shadow-md font-bold">
+              Enroll Student Partner
             </Button>
           </DialogFooter>
         </form>

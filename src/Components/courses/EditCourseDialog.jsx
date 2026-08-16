@@ -32,14 +32,14 @@ function EditCourseDialog({
     e.preventDefault();
 
     const numFees = Number(String(course.fees).replace(/[^0-9]/g, "")) || 0;
-    const numDuration = Number(String(course.duration).replace(/[^0-9]/g, "")) || 4;
+    const rawDur = course.duration ? String(course.duration).trim() : "3 Months";
+    const formattedDuration = /^\d+$/.test(rawDur) ? `${rawDur} Months` : rawDur;
 
     const payload = {
       ...course,
       courseName: course.name,
       name: course.name,
-      duration: numDuration,
-      durationText: `${numDuration} Months`,
+      duration: formattedDuration,
       fee: numFees,
       fees: numFees,
       status: course.status || "Active",

@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import { NavLink, useNavigate, useLocation } from "react-router-dom";
 import {
   LayoutDashboard,
@@ -12,10 +13,28 @@ import {
   Sparkles,
 } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "../ui/avatar";
+import { getStudents } from "../../services/studentService";
 
 function Sidebar({ collapsed, setCollapsed }) {
   const navigate = useNavigate();
   const location = useLocation();
+  const [studentCount, setStudentCount] = useState(0);
+
+  useEffect(() => {
+    loadRealStudentCount();
+  }, [location.pathname]);
+
+  const loadRealStudentCount = async () => {
+    try {
+      const res = await getStudents();
+      if (res && res.data) {
+        const stds = Array.isArray(res.data) ? res.data : res.data.data || [];
+        setStudentCount(stds.length);
+      }
+    } catch (err) {
+      console.log("Error loading sidebar student count:", err);
+    }
+  };
 
   const menuSections = [
     {
@@ -30,7 +49,7 @@ function Sidebar({ collapsed, setCollapsed }) {
           name: "Students",
           icon: <Users className="h-4.5 w-4.5 shrink-0" />,
           path: "/students",
-          badge: "148",
+          badge: String(studentCount || 0),
         },
         {
           name: "Courses",
