@@ -98,21 +98,40 @@ export const getPaymentById = async (id) => {
 
 // Add Payment Receipt
 export const addPayment = async (payment) => {
-  const list = getLocalPayments();
-  const newRecord = {
+  // Normalize to local display format (using id, date, method, status)
+  const localRecord = {
     ...payment,
-    id: payment.id || `TXN-${Math.floor(1000 + Math.random() * 9000)}`,
+    id: payment.paymentId || payment.id || `TXN-${Math.floor(1000 + Math.random() * 9000)}`,
+    date: payment.paymentDate || payment.date,
+    method: payment.paymentMode || payment.method,
+    status: payment.paymentStatus || payment.status,
+    courseName: payment.course || payment.courseName,
   };
-  const updatedList = [newRecord, ...list.filter((p) => String(p.id) !== String(newRecord.id))];
+
+  const list = getLocalPayments();
+  const updatedList = [localRecord, ...list.filter((p) => String(p.id || p.paymentId) !== String(localRecord.id))];
   saveLocalPayments(updatedList);
 
   try {
-    const res = await api.post("/payments", payment);
+    // Backend expects: paymentId, studentName, studentEmail, course, amount, paymentDate, paymentMode, paymentStatus, admissionId
+    const apiPayload = {
+      paymentId: localRecord.id,
+      studentName: payment.studentName,
+      studentEmail: payment.studentEmail || "student@gmail.com",
+      course: payment.course || payment.courseName,
+      amount: Number(payment.amount),
+      paymentDate: payment.paymentDate || payment.date,
+      paymentMode: payment.paymentMode || payment.method,
+      paymentStatus: payment.paymentStatus || payment.status || "Completed",
+      admissionId: payment.admissionId || null,
+      notes: payment.notes || null,
+    };
+    const res = await api.post("/payments", apiPayload);
     if (res && res.data) return res;
   } catch (error) {
     // Quietly store locally
   }
-  return { data: newRecord };
+  return { data: localRecord };
 };
 
 // Update Payment

@@ -65,6 +65,13 @@ function EmailReceiptModal({ open, setOpen, receiptData }) {
   const rawDate = receiptData.date || receiptData.admissionDate || new Date().toISOString().split("T")[0];
   const date = String(rawDate).includes("T") ? String(rawDate).split("T")[0] : String(rawDate);
 
+  // EMI detection
+  const isEmi = (receiptData.method || receiptData.paymentMethod || "").toLowerCase().includes("emi") || Boolean(receiptData.installmentNumber);
+  const installmentNumber = receiptData.installmentNumber || null;
+  const emiNotes = receiptData.notes || "";
+  const displayNotes = emiNotes || (isEmi && installmentNumber ? `EMI Installment #${installmentNumber}` : null);
+  const receiptTypeLabel = isEmi ? `EMI Installment${installmentNumber ? ` #${installmentNumber}` : ""} Receipt` : "Fee Payment Receipt";
+
   const handleOpenGmailWeb = () => {
     if (!targetEmail.trim()) {
       alert("Please enter a valid target student email address.");
@@ -116,10 +123,13 @@ studentadmissioncrm@gmail.com`
             </div>
             <div>
               <DialogTitle className="text-white text-xl font-bold flex items-center gap-2">
-                Automated Fee Receipt Email
+                {isEmi ? "EMI Installment Receipt" : "Automated Fee Receipt Email"}
               </DialogTitle>
               <DialogDescription className="text-[#d4e9e2] text-xs mt-0.5">
-                Official payment receipt dispatch system targeting student mail ID
+                {isEmi
+                  ? `Official EMI payment confirmation${installmentNumber ? ` — Installment #${installmentNumber}` : ""}`
+                  : "Official payment receipt dispatch system targeting student mail ID"
+                }
               </DialogDescription>
             </div>
           </div>
@@ -161,7 +171,7 @@ studentadmissioncrm@gmail.com`
               </div>
             )}
 
-          {/* Email Preview Card */}
+            {/* Email Preview Card */}
           <div className="border border-slate-200 rounded-xl p-4 bg-white space-y-3 font-sans shadow-xs">
             <div className="border-b border-slate-200 pb-2.5 space-y-1 text-xs text-slate-600">
               <div className="flex justify-between items-center">
@@ -173,12 +183,19 @@ studentadmissioncrm@gmail.com`
               <div>
                 <span className="font-bold text-slate-800">To: </span> {studentName} &lt;<span className="text-[#cc785c] font-bold">{targetEmail}</span>&gt;
               </div>
+              {isEmi && installmentNumber && (
+                <div className="mt-1">
+                  <span className="inline-flex items-center gap-1 text-[10px] font-bold bg-[#cc785c]/10 text-[#cc785c] border border-[#cc785c]/20 px-2 py-0.5 rounded-full">
+                    EMI Installment #{installmentNumber}
+                  </span>
+                </div>
+              )}
             </div>
 
             <div className="text-xs text-slate-700 space-y-2">
               <p className="font-semibold text-[#1E3932]">Dear {studentName},</p>
               <p>
-                Thank you for your payment towards <strong>{courseName}</strong>. Your official fee receipt is generated below:
+                Thank you for your {isEmi ? `EMI installment payment` : "payment"} towards <strong>{courseName}</strong>. Your official fee receipt is generated below:
               </p>
             </div>
 
@@ -192,6 +209,18 @@ studentadmissioncrm@gmail.com`
                 <span className="text-slate-500 font-semibold">Course Track</span>
                 <span className="font-bold text-slate-800">{courseName}</span>
               </div>
+              {isEmi && installmentNumber && (
+                <div className="flex justify-between border-b pb-1">
+                  <span className="text-slate-500 font-semibold">EMI Installment</span>
+                  <span className="font-bold text-[#cc785c]">#{installmentNumber} {emiNotes ? `— ${emiNotes.split("(")[0].trim()}` : ""}</span>
+                </div>
+              )}
+              {displayNotes && !installmentNumber && (
+                <div className="flex justify-between border-b pb-1">
+                  <span className="text-slate-500 font-semibold">Description</span>
+                  <span className="font-bold text-slate-800 text-right max-w-[55%]">{displayNotes}</span>
+                </div>
+              )}
               <div className="flex justify-between border-b pb-1">
                 <span className="text-slate-500 font-semibold">Payment Mode</span>
                 <span className="font-bold text-slate-800">{method}</span>
@@ -201,7 +230,7 @@ studentadmissioncrm@gmail.com`
                 <span className="font-bold text-slate-800">{date}</span>
               </div>
               <div className="flex justify-between pt-1 text-sm">
-                <span className="font-bold text-[#1E3932]">Total Paid Amount</span>
+                <span className="font-bold text-[#1E3932]">{isEmi ? "EMI Amount Paid" : "Total Paid Amount"}</span>
                 <span className="font-extrabold text-[#006241]">₹{amount.toLocaleString()}</span>
               </div>
             </div>

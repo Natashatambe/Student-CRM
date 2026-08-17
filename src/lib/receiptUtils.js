@@ -14,7 +14,10 @@ export const generatePaymentReceiptPDF = (payment) => {
   const amount = Number(payment.amount || payment.totalFee || 0);
   const method = payment.method || payment.paymentMethod || "UPI / GPay";
   const date = payment.date || payment.admissionDate || new Date().toISOString().split("T")[0];
-  const notes = payment.notes || (payment.paymentType === "EMI" ? `EMI Plan (${payment.emiPaidCount || 1}/${payment.emiTenure || 3} Paid)` : "Full Payment Fee Receipt");
+  const installmentNumber = payment.installmentNumber || null;
+  const isEmi = (payment.method || "").toLowerCase().includes("emi") || Boolean(installmentNumber);
+  const notes = payment.notes || (isEmi && installmentNumber ? `EMI Installment #${installmentNumber}` : (payment.paymentType === "EMI" ? `EMI Plan (${payment.emiPaidCount || 1}/${payment.emiTenure || 3} Paid)` : "Full Payment Fee Receipt"));
+  const badgeText = isEmi ? (installmentNumber ? `✓ EMI INSTALLMENT #${installmentNumber} PAID` : "✓ EMI PAYMENT PAID") : "✓ PAID IN FULL";
 
   const formattedDate = new Date(date).toLocaleDateString("en-US", {
     year: "numeric",
@@ -56,7 +59,7 @@ export const generatePaymentReceiptPDF = (payment) => {
               <div style="font-size: 12px; color: #64748b; margin-top: 4px;">Official Fee Receipt & Payment Confirmation</div>
             </div>
             <div>
-              <span class="badge-paid">✓ PAID IN FULL</span>
+              <span class="badge-paid">${badgeText}</span>
             </div>
           </div>
 

@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import Layout from "../../Components/layout/Layout";
 import { Card, CardContent } from "../../Components/ui/card";
 import { Button } from "../../Components/ui/button";
@@ -39,6 +39,8 @@ function Payments() {
   const [stripePaymentData, setStripePaymentData] = useState(null);
 
   const [statusTab, setStatusTab] = useState("all");
+  const [pageIndex, setPageIndex] = useState(0);
+  const [pageSize, setPageSize] = useState(10);
 
   const [newPayment, setNewPayment] = useState({
     studentName: "",
@@ -77,7 +79,7 @@ function Payments() {
 
 
 
-  const handleLaunchStripeDirect = (pData = null) => {
+  const handleLaunchStripeDirect = useCallback((pData = null) => {
     const dataToUse = pData || {
       studentName: newPayment.studentName || "Student Partner",
       studentEmail: newPayment.studentEmail || "student@gmail.com",
@@ -87,7 +89,7 @@ function Payments() {
     };
     setStripePaymentData(dataToUse);
     setOpenStripeModal(true);
-  };
+  }, [newPayment]);
 
   const handleCreatePayment = async (e) => {
     e.preventDefault();
@@ -108,34 +110,51 @@ function Payments() {
       return;
     }
 
+    const txnId = `TXN-${Math.floor(1000 + Math.random() * 9000)}`;
+    const today = new Date().toISOString().split("T")[0];
+
+    // Build payload with field names matching backend PaymentDTO
     const payload = {
-      ...newPayment,
-      id: `TXN-${Math.floor(1000 + Math.random() * 9000)}`,
+      paymentId: txnId,
+      studentName: newPayment.studentName,
       studentEmail: newPayment.studentEmail || "student@gmail.com",
+      course: newPayment.course,
       amount: Number(newPayment.amount),
-      date: new Date().toISOString().split("T")[0],
+      paymentDate: today,
+      paymentMode: newPayment.method,
+      paymentStatus: newPayment.status || "Completed",
+    };
+
+    // Local display record (uses same field names for consistency)
+    const localRecord = {
+      ...payload,
+      id: txnId,
+      date: today,
+      method: newPayment.method,
+      status: newPayment.status || "Completed",
+      courseName: newPayment.course,
     };
 
     try {
       const res = await addPayment(payload);
       if (res && res.data) {
-        const created = res.data;
-        setPayments((prev) => [created, ...prev.filter((p) => String(p.id) !== String(created.id))]);
+        const created = { ...localRecord, ...res.data };
+        setPayments((prev) => [created, ...prev.filter((p) => String(p.id || p.paymentId) !== String(created.id || created.paymentId))]);
       } else {
-        setPayments((prev) => [payload, ...prev.filter((p) => String(p.id) !== String(payload.id))]);
+        setPayments((prev) => [localRecord, ...prev.filter((p) => String(p.id || p.paymentId) !== String(localRecord.id))]);
       }
     } catch (error) {
       console.log("API add payment simulation:", error);
-      setPayments((prev) => [payload, ...prev.filter((p) => String(p.id) !== String(payload.id))]);
+      setPayments((prev) => [localRecord, ...prev.filter((p) => String(p.id || p.paymentId) !== String(localRecord.id))]);
     }
 
     showToast(`Processed fee receipt for ₹${payload.amount.toLocaleString()}!`, "info");
     setOpenModal(false);
 
-    sendReceiptEmailAPI(payload);
-    generatePaymentReceiptPDF(payload);
+    sendReceiptEmailAPI(localRecord);
+    generatePaymentReceiptPDF(localRecord);
 
-    setSelectedReceipt(payload);
+    setSelectedReceipt(localRecord);
     setOpenEmailModal(true);
 
     setNewPayment({
@@ -153,13 +172,16 @@ function Payments() {
     addPayment(stripeReceipt);
     showToast(`🎉 Stripe Test Payment Completed for ₹${stripeReceipt.amount.toLocaleString()}!`, "success");
     setOpenStripeModal(false);
+    // Auto-open receipt modal for stripe payment
+    setSelectedReceipt(stripeReceipt);
+    setOpenEmailModal(true);
   };
 
-  const handleOpenReceiptEmail = (p) => {
+  const handleOpenReceiptEmail = useCallback((p) => {
     sendReceiptEmailAPI(p);
     setSelectedReceipt(p);
     setOpenEmailModal(true);
-  };
+  }, []);
 
   const handleExportExcel = () => {
     const exportData = filteredPayments.map((p) => ({
@@ -298,6 +320,17 @@ function Payments() {
     return true;
   });
 
+  // Reset to page 0 whenever filter/search changes
+  const handleSetStatusTab = useCallback((tab) => {
+    setStatusTab(tab);
+    setPageIndex(0);
+  }, []);
+
+  const handleSetSearch = useCallback((val) => {
+    setSearch(val);
+    setPageIndex(0);
+  }, []);
+
   const totalCollected = allCombinedPayments
     .filter((p) => p.status === "Completed")
     .reduce((acc, curr) => acc + (Number(curr.amount) || 0), 0);
@@ -309,6 +342,9 @@ function Payments() {
   const totalPotential = totalCollected + pendingDues;
   const collectionRate = totalPotential > 0 ? ((totalCollected / totalPotential) * 100).toFixed(1) : "100.0";
 
+  // Columns are stable — they don't depend on filteredPayments.
+  // Removing filteredPayments from deps prevents the table from being
+  // reconstructed (and pagination reset) on every search/filter change.
   const paymentsColumns = useMemo(() => [
     {
       id: "student",
@@ -363,30 +399,56 @@ function Payments() {
     {
       id: "actions",
       header: "Receipt Action",
-      size: 150,
+      size: 200,
       enableSorting: false,
       cell: ({ row }) => {
         const p = row.original;
-        return p.status === "Pending" ? (
-          <Button size="xs" variant="stripe" onClick={() => handleLaunchStripeDirect(p)}
-            className="gap-1 text-xs font-bold px-2.5 py-1 rounded-lg bg-[#635bff] hover:bg-[#534ae4] text-white">
-            <CreditCard className="h-3.5 w-3.5" /> Pay ₹{(p.amount || 0).toLocaleString()}
-          </Button>
-        ) : (
-          <Button size="xs" variant="outline" onClick={() => handleOpenReceiptEmail(p)}
-            className="gap-1 text-xs border-[#e6dfd8] bg-[#faf9f5] hover:bg-[#efe9de] text-[#141413]">
-            <Mail className="h-3.5 w-3.5 text-[#cc785c]" /> Receipt Email
-          </Button>
+        const isEmi = (p.method || "").toLowerCase().includes("emi");
+        if (p.status === "Pending") {
+          return (
+            <Button size="xs" variant="stripe" onClick={() => handleLaunchStripeDirect(p)}
+              className="gap-1 text-xs font-bold px-2.5 py-1 rounded-lg bg-[#635bff] hover:bg-[#534ae4] text-white">
+              <CreditCard className="h-3.5 w-3.5" /> Pay ₹{(p.amount || 0).toLocaleString()}
+            </Button>
+          );
+        }
+        return (
+          <div className="flex items-center gap-1.5">
+            <Button size="xs" variant="outline" onClick={() => handleOpenReceiptEmail(p)}
+              className="gap-1 text-xs border-[#e6dfd8] bg-[#faf9f5] hover:bg-[#efe9de] text-[#141413]">
+              <Mail className="h-3.5 w-3.5 text-[#cc785c]" />
+              {isEmi ? "EMI Receipt" : "Receipt Email"}
+            </Button>
+            <Button size="xs" variant="outline" onClick={() => { generatePaymentReceiptPDF(p); }}
+              className="gap-1 text-xs border-[#e6dfd8] bg-[#faf9f5] hover:bg-[#efe9de] text-[#141413]">
+              <Download className="h-3.5 w-3.5 text-[#00754A]" /> PDF
+            </Button>
+          </div>
         );
       },
     },
-  ], [filteredPayments]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  ], [handleLaunchStripeDirect, handleOpenReceiptEmail]);
 
   const paymentsTable = useTable({
     features: dataGridFeatures,
     data: filteredPayments,
     columns: paymentsColumns,
-    initialState: { pagination: { pageSize: 10, pageIndex: 0 } },
+    // Controlled pagination state — managed by our local state so we can
+    // reset the page index to 0 whenever the filter or search changes.
+    state: {
+      pagination: { pageIndex, pageSize },
+    },
+    onPaginationChange: (updater) => {
+      const next = typeof updater === "function"
+        ? updater({ pageIndex, pageSize })
+        : updater;
+      setPageIndex(next.pageIndex);
+      setPageSize(next.pageSize);
+    },
+    // Also let TanStack reset the page automatically when the data array
+    // changes (e.g. new payment added, admissions reload).
+    autoResetPageIndex: true,
     getRowId: (row, idx) => String(row.id || idx),
   });
 
@@ -468,7 +530,7 @@ function Payments() {
             <div className="flex items-center gap-1.5 bg-[#faf9f5] p-1 rounded-xl border border-[#e6dfd8]">
               <button
                 type="button"
-                onClick={() => setStatusTab("all")}
+                onClick={() => handleSetStatusTab("all")}
                 className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition cursor-pointer ${
                   statusTab === "all" ? "bg-[#efe9de] text-[#cc785c] font-bold shadow-2xs" : "text-[#6c6a64] hover:text-[#141413]"
                 }`}
@@ -477,7 +539,7 @@ function Payments() {
               </button>
               <button
                 type="button"
-                onClick={() => setStatusTab("completed")}
+                onClick={() => handleSetStatusTab("completed")}
                 className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition cursor-pointer ${
                   statusTab === "completed" ? "bg-[#efe9de] text-[#00754A] font-bold shadow-2xs" : "text-[#6c6a64] hover:text-[#141413]"
                 }`}
@@ -486,7 +548,7 @@ function Payments() {
               </button>
               <button
                 type="button"
-                onClick={() => setStatusTab("pending")}
+                onClick={() => handleSetStatusTab("pending")}
                 className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition cursor-pointer ${
                   statusTab === "pending" ? "bg-[#efe9de] text-[#cc785c] font-bold shadow-2xs" : "text-[#6c6a64] hover:text-[#141413]"
                 }`}
@@ -503,7 +565,7 @@ function Payments() {
                   type="text"
                   placeholder="Search student, txn ID, or course..."
                   value={search}
-                  onChange={(e) => setSearch(e.target.value)}
+                  onChange={(e) => handleSetSearch(e.target.value)}
                   className="pl-10 rounded-xl bg-[#faf9f5] border-[#e6dfd8] text-xs h-9"
                 />
               </div>

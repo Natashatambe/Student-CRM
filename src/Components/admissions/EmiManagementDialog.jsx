@@ -114,6 +114,7 @@ function EmiManagementDialog({ open, setOpen, admission, onAdmissionUpdated, onE
         onEmailReceiptTrigger({
           ...payment,
           studentEmail: targetMail,
+          installmentNumber,
         });
       }
 
@@ -248,14 +249,40 @@ function EmiManagementDialog({ open, setOpen, admission, onAdmissionUpdated, onE
                         </td>
                         <td className="p-3 text-right whitespace-nowrap">
                           {item.status === "Paid" ? (
-                            <Button
-                              size="xs"
-                              variant="outline"
-                              onClick={() => generatePaymentReceiptPDF({ ...item, studentName: admission.studentName, course: admission.courseName })}
-                              className="gap-1 text-xs border-[#e6dfd8] bg-[#faf9f5] hover:bg-[#efe9de] text-[#141413] font-semibold"
-                            >
-                              <Download className="h-3.5 w-3.5 text-[#00754A]" /> Receipt
-                            </Button>
+                            <div className="flex items-center justify-end gap-1.5">
+                              <Button
+                                size="xs"
+                                variant="outline"
+                                onClick={() => {
+                                  if (onEmailReceiptTrigger) {
+                                    onEmailReceiptTrigger({
+                                      id: item.txnId || `TXN-EMI-${admission.admissionId || admission.id}-${item.installmentNumber}`,
+                                      studentName: admission.studentName || admission.student?.name || "Student Partner",
+                                      studentEmail: admission.studentEmail || admission.student?.email || "student@gmail.com",
+                                      course: admission.courseName || admission.course?.courseName || "Course Track",
+                                      courseName: admission.courseName || admission.course?.courseName || "Course Track",
+                                      amount: item.amount || monthlyFee,
+                                      method: payMethod,
+                                      date: item.paidDate || admission.admissionDate || new Date().toISOString().split("T")[0],
+                                      status: "Completed",
+                                      installmentNumber: item.installmentNumber,
+                                      notes: `EMI Installment #${item.installmentNumber} of ${tenure} (Paid)`,
+                                    });
+                                  }
+                                }}
+                                className="gap-1 text-xs border-[#e6dfd8] bg-[#faf9f5] hover:bg-[#efe9de] text-[#141413] font-semibold"
+                              >
+                                <Send className="h-3.5 w-3.5 text-[#cc785c]" /> Receipt
+                              </Button>
+                              <Button
+                                size="xs"
+                                variant="outline"
+                                onClick={() => generatePaymentReceiptPDF({ ...item, studentName: admission.studentName, course: admission.courseName, installmentNumber: item.installmentNumber, notes: `EMI Installment #${item.installmentNumber} of ${tenure}` })}
+                                className="gap-1 text-xs border-[#e6dfd8] bg-[#faf9f5] hover:bg-[#efe9de] text-[#141413] font-semibold"
+                              >
+                                <Download className="h-3.5 w-3.5 text-[#00754A]" /> PDF
+                              </Button>
+                            </div>
                           ) : (
                             <Button
                               size="xs"

@@ -22,7 +22,7 @@ import {
   deleteStudent,
   normalizeStudentRecord,
 } from "../../services/studentService";
-import { addAdmission, updateAdmission, deleteAdmission } from "../../services/admissionService";
+import { addAdmission, updateAdmission, deleteAdmission, getAdmissions } from "../../services/admissionService";
 import { exportToExcel, exportToPDF } from "../../lib/exportUtils";
 import { normalizeStatus } from "../../lib/utils";
 
@@ -56,15 +56,33 @@ function Students() {
   const loadStudentsFromBackend = async () => {
     try {
       setLoading(true);
-      const res = await getStudents();
-      if (res && res.data) {
-        let list = [];
-        if (Array.isArray(res.data)) list = res.data;
-        else if (Array.isArray(res.data.data)) list = res.data.data;
+      // Fetch students AND admissions in parallel
+      const [studRes, admRes] = await Promise.all([
+        getStudents(),
+        getAdmissions(),
+      ]);
 
-        // Ensure DESCENDING ORDER (latest entry first)
+      if (studRes && studRes.data) {
+        let list = Array.isArray(studRes.data) ? studRes.data : (studRes.data.data || []);
+
+        // Build a map of studentId -> admission for fast lookup
+        const admList = admRes?.data || [];
+        const admByStudentId = {};
+        admList.forEach((adm) => {
+          const sid = String(adm.studentId || adm.student?.id || adm.student?.studentId || "");
+          if (sid) admByStudentId[sid] = adm;
+        });
+
+        // Merge admission data into each student record
         const sortedList = [...list].sort((a, b) => Number(b.id || b.studentId || 0) - Number(a.id || a.studentId || 0));
-        const mapped = sortedList.map((s, idx) => normalizeStudentRecord(s, idx));
+        const mapped = sortedList.map((s, idx) => {
+          const sId = String(s.id || s.studentId || "");
+          const matchedAdm = admByStudentId[sId] || null;
+          return normalizeStudentRecord(
+            matchedAdm ? { ...s, admission: matchedAdm } : s,
+            idx
+          );
+        });
         setStudents(mapped);
       }
     } catch (error) {
@@ -183,15 +201,20 @@ function Students() {
     const previousStudent = students.find((s) => String(s.id || s.studentId) === String(sId));
     const wasNotActive = !previousStudent || normalizeStatus(previousStudent.status) !== "Active";
     const isNowActive = normStatus === "Active";
-    const hasAdmission = Boolean(previousStudent?.admission || previousStudent?.admissionId);
+    const existingAdmId = previousStudent?.admissionId || previousStudent?.admission?.id || previousStudent?.admission?.admissionId;
+    const hasAdmission = Boolean(existingAdmId);
 
-    const realCourseTrack = updatedStudent.course || previousStudent?.course || "Java Full Stack";
+    const realCourseTrack = updatedStudent.course || previousStudent?.course || "";
     const cId = Number(updatedStudent.courseId || previousStudent?.courseId || 1);
 
-    const feeVal = Number(updatedStudent.totalFee ?? updatedStudent.fees ?? previousStudent?.totalFee ?? 50000);
-    const pType = updatedStudent.paymentType || previousStudent?.paymentType || "Full";
-    const eTenure = Number(updatedStudent.emiTenure || previousStudent?.emiTenure || 3);
-    const eMonthly = pType === "EMI" ? Number(updatedStudent.emiMonthlyAmount || Math.round(feeVal / eTenure)) : null;
+    const feeVal = updatedStudent.totalFee != null ? Number(updatedStudent.totalFee)
+      : updatedStudent.fees != null ? Number(updatedStudent.fees)
+      : previousStudent?.totalFee != null ? Number(previousStudent.totalFee)
+      : null;
+    const pType = updatedStudent.paymentType || previousStudent?.paymentType || null;
+    const eTenure = pType === "EMI" ? Number(updatedStudent.emiTenure || previousStudent?.emiTenure || 3) : null;
+    const eMonthly = pType === "EMI" ? Number(updatedStudent.emiMonthlyAmount || (feeVal && eTenure ? Math.round(feeVal / eTenure) : 0)) : null;
+    const pStatus = updatedStudent.paymentStatus || previousStudent?.paymentStatus || null;
 
     const payload = {
       ...previousStudent,
@@ -209,14 +232,16 @@ function Students() {
       status: normStatus,
       totalFee: feeVal,
       fees: feeVal,
-      emiTenure: pType === "EMI" ? eTenure : null,
+      paymentType: pType,
+      paymentStatus: pStatus,
+      emiTenure: eTenure,
       emiMonthlyAmount: eMonthly,
     };
 
+    // Optimistically update UI
     setStudents((prev) =>
       prev.map((s) => (String(s.id || s.studentId) === String(sId) ? { ...s, ...payload, status: normStatus } : s))
     );
-
     if (studentToView && String(studentToView.id || studentToView.studentId) === String(sId)) {
       setStudentToView((prev) => ({ ...prev, ...payload, status: normStatus }));
     }
@@ -227,35 +252,42 @@ function Students() {
       console.log("API update student error:", error);
     }
 
-    if (isNowActive && (!hasAdmission || wasNotActive)) {
+    if (isNowActive && feeVal) {
       try {
-        const selectedFee = Number(updatedStudent.totalFee || updatedStudent.fees || 50000);
-        const pType = updatedStudent.paymentType || "Full";
-        const eTenure = Number(updatedStudent.emiTenure || 3);
-        const eMonthly = pType === "EMI" ? Number(updatedStudent.emiMonthlyAmount || Math.round(selectedFee / eTenure)) : null;
-
-        await addAdmission({
+        const admPayload = {
           studentId: Number(sId),
           courseId: cId,
           studentName: payload.name,
           studentEmail: payload.email,
           courseName: realCourseTrack,
-          admissionDate: new Date().toISOString().split("T")[0],
-          totalFee: selectedFee,
-          paymentStatus: updatedStudent.paymentStatus || (pType === "EMI" ? "Partial" : "Paid"),
-          paymentType: pType,
-          emiTenure: pType === "EMI" ? eTenure : null,
+          admissionDate: updatedStudent.admissionDate || previousStudent?.admissionDate || new Date().toISOString().split("T")[0],
+          totalFee: feeVal,
+          paymentStatus: pStatus || (pType === "EMI" ? "Partial" : "Paid"),
+          paymentType: pType || "Full",
+          emiTenure: eTenure,
           emiMonthlyAmount: eMonthly,
           student: { id: Number(sId), name: payload.name, email: payload.email },
           course: { id: cId, name: realCourseTrack },
-        }).catch((err) => console.log("Admission add error:", err));
-        showToast(`🎉 Student ${payload.name} Approved for ${realCourseTrack}!`, "success");
+        };
+
+        if (hasAdmission && !wasNotActive) {
+          // Student already had admission — UPDATE it
+          await updateAdmission(existingAdmId, admPayload).catch((err) => console.log("Admission update error:", err));
+          showToast(`\uD83D\uDCCB Admission & fee details updated for ${payload.name}!`, "success");
+        } else {
+          // First time becoming Active — CREATE admission
+          await addAdmission(admPayload).catch((err) => console.log("Admission add error:", err));
+          showToast(`\uD83C\uDF89 Student ${payload.name} approved for ${realCourseTrack}!`, "success");
+        }
       } catch (err) {
-        console.log("Auto-admission on status update error:", err);
+        console.log("Admission sync error:", err);
       }
     } else {
       showToast(`Updated student status to ${normStatus} for ${payload.name}`, "success");
     }
+
+    // Reload to get fresh merged student+admission data
+    await loadStudentsFromBackend();
   };
 
   const handleDeleteClick = (student) => {
@@ -524,7 +556,7 @@ function Students() {
                     Query: "{search}"
                   </span>
                 )}
-                <span className="text-[#8e8b82]">({totalElements} results)</span>
+                <span className="text-[#8e8b82]">({filteredStudents.length} results)</span>
               </div>
               <button
                 type="button"

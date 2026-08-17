@@ -84,10 +84,17 @@ export const addAdmission = async (admission) => {
   saveLocalAdmissions(updatedList);
 
   try {
+    // Only send scalar fields — do NOT spread nested student/course objects
     const payload = {
-      ...admission,
-      studentId: Number(admission.studentId || admission.student?.id || 1),
-      courseId: Number(admission.courseId || admission.course?.id || 1),
+      studentId: Number(admission.studentId || admission.student?.id || 0),
+      courseId: Number(admission.courseId || admission.course?.id || 0),
+      admissionDate: admission.admissionDate,
+      totalFee: Number(admission.totalFee || 0),
+      paymentStatus: admission.paymentStatus,
+      paymentType: admission.paymentType || "Full",
+      emiTenure: admission.emiTenure || null,
+      emiMonthlyAmount: admission.emiMonthlyAmount || null,
+      emiPaidCount: admission.emiPaidCount || null,
     };
     const res = await api.post("/admissions", payload);
     if (res && res.data) return res;
@@ -107,10 +114,17 @@ export const updateAdmission = async (id, admission) => {
   saveLocalAdmissions(updatedList);
 
   try {
+    // Only send scalar fields — do NOT spread nested student/course objects
     const payload = {
-      ...admission,
-      studentId: Number(admission.studentId || admission.student?.id || 1),
-      courseId: Number(admission.courseId || admission.course?.id || 1),
+      studentId: Number(admission.studentId || admission.student?.id || 0),
+      courseId: Number(admission.courseId || admission.course?.id || 0),
+      admissionDate: admission.admissionDate,
+      totalFee: Number(admission.totalFee || 0),
+      paymentStatus: admission.paymentStatus,
+      paymentType: admission.paymentType || "Full",
+      emiTenure: admission.emiTenure || null,
+      emiMonthlyAmount: admission.emiMonthlyAmount || null,
+      emiPaidCount: admission.emiPaidCount || null,
     };
     const res = await api.put(`/admissions/${id}`, payload);
     if (res && res.data) return res;

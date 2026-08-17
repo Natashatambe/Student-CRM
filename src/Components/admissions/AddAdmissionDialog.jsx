@@ -39,13 +39,18 @@ function AddAdmissionDialog({ open = true, setOpen, onClose, onSuccess, onAdmiss
         if (Array.isArray(response.data)) list = response.data;
         else if (Array.isArray(response.data.data)) list = response.data.data;
         if (list.length > 0) {
-          const mapped = list.map((s) => ({
-            id: s.id || s.studentId,
-            firstName: s.firstName || (s.name ? s.name.split(" ")[0] : "Student"),
-            lastName: s.lastName || (s.name ? s.name.split(" ").slice(1).join(" ") : ""),
-            name: s.name || `${s.firstName || ""} ${s.lastName || ""}`.trim(),
-            email: s.email || "student@gmail.com",
-          }));
+          const mapped = list
+            .filter((s) => {
+              const st = (s.status || "").toLowerCase().trim();
+              return st === "active";
+            })
+            .map((s) => ({
+              id: s.id || s.studentId,
+              firstName: s.firstName || (s.name ? s.name.split(" ")[0] : "Student"),
+              lastName: s.lastName || (s.name ? s.name.split(" ").slice(1).join(" ") : ""),
+              name: s.name || `${s.firstName || ""} ${s.lastName || ""}`.trim(),
+              email: s.email || "student@gmail.com",
+            }));
           setStudents(mapped);
         }
       }

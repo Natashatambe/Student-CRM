@@ -3,61 +3,7 @@ import { normalizeStatus } from "../lib/utils";
 
 const STORAGE_KEY = "crm_fallback_students";
 
-const DEFAULT_STUDENTS = [
-  {
-    id: 1,
-    studentId: 1,
-    firstName: "Jonny",
-    lastName: "Ive",
-    name: "Jonny Ive",
-    email: "jonny@apple.com",
-    phone: "9876543210",
-    address: "Infinite Loop 1, Cupertino",
-    gender: "Male",
-    course: "Java Full Stack",
-    status: "Active",
-    fees: 50000,
-    totalFee: 50000,
-    paymentType: "Full",
-    paymentStatus: "Paid",
-  },
-  {
-    id: 2,
-    studentId: 2,
-    firstName: "Sarah",
-    lastName: "Connor",
-    name: "Sarah Connor",
-    email: "sarah@sky.net",
-    phone: "9876543211",
-    address: "Cyberdyne Systems Ave, LA",
-    gender: "Female",
-    course: "Python Masterclass",
-    status: "Active",
-    fees: 35000,
-    totalFee: 35000,
-    paymentType: "Full",
-    paymentStatus: "Paid",
-  },
-  {
-    id: 3,
-    studentId: 3,
-    firstName: "Alex",
-    lastName: "Rivera",
-    name: "Alex Rivera",
-    email: "alex.rivera@tech.org",
-    phone: "9876543212",
-    address: "45 Innovation Way, NY",
-    gender: "Male",
-    course: "React JS Track",
-    status: "Pending",
-    fees: 30000,
-    totalFee: 30000,
-    paymentType: "EMI",
-    paymentStatus: "Partial",
-    emiTenure: 3,
-    emiMonthlyAmount: 10000,
-  },
-];
+// No fake default students — only real backend data is shown
 
 export const normalizeStudentRecord = (s, idx = 0) => {
   if (!s) return s;
@@ -67,39 +13,47 @@ export const normalizeStudentRecord = (s, idx = 0) => {
   let mail = s.email || "";
 
   const sId = s.id || s.studentId || (idx + 1);
-  const feeVal = Number(s.totalFee ?? s.fees ?? s.admission?.totalFee ?? 50000);
-  const pType = s.paymentType || s.admission?.paymentType || "Full";
-  const eTenure = s.emiTenure || s.admission?.emiTenure || (pType === "EMI" ? 3 : null);
-  const pStatus = s.paymentStatus || s.admission?.paymentStatus || (pType === "EMI" ? "Partial" : (s.status === "Active" ? "Paid" : "Pending"));
-  const eMonthly = s.emiMonthlyAmount || s.admission?.emiMonthlyAmount || (pType === "EMI" ? Math.round(feeVal / (eTenure || 3)) : null);
   const formattedId = s.formattedId || `STU-${101 + idx}`;
-  const admId = s.admissionId || s.admission?.admissionId || s.admission?.id || sId;
-  const admDate = s.admissionDate || s.admission?.admissionDate || s.admission?.created_at || s.admission?.createdAt || new Date().toISOString().split("T")[0];
 
-  const admissionObj = s.admission
-    ? {
-        ...s.admission,
-        id: s.admission.id || admId,
-        admissionId: s.admission.admissionId || s.admission.id || admId,
-        admissionDate: s.admission.admissionDate || s.admission.created_at || admDate,
-        totalFee: Number(s.admission.totalFee || feeVal),
-        paymentStatus: s.admission.paymentStatus || pStatus,
-        paymentType: s.admission.paymentType || pType,
-        emiTenure: s.admission.emiTenure || eTenure,
-        emiMonthlyAmount: s.admission.emiMonthlyAmount || eMonthly,
-      }
-    : s.status === "Active" || admId || feeVal
-    ? {
-        id: admId,
-        admissionId: admId,
-        admissionDate: admDate,
-        totalFee: feeVal,
-        paymentStatus: pStatus,
-        paymentType: pType,
-        emiTenure: eTenure,
-        emiMonthlyAmount: eMonthly,
-        emiPaidCount: s.emiPaidCount || 1,
-      }
+  // Only use REAL fee/payment data — no invented fallbacks
+  const rawFee = s.totalFee ?? s.fees ?? s.admission?.totalFee ?? null;
+  const feeVal = rawFee !== null ? Number(rawFee) : null;
+
+  const pType = s.paymentType || s.admission?.paymentType || null;
+  const pStatus = s.paymentStatus || s.admission?.paymentStatus || null;
+  const eTenure = s.emiTenure || s.admission?.emiTenure || null;
+  const eMonthly = s.emiMonthlyAmount || s.admission?.emiMonthlyAmount || null;
+
+  // Only use real admission date — no invented today's date
+  const admDate = s.admissionDate || s.admission?.admissionDate || s.admission?.created_at || s.admission?.createdAt || null;
+  const admId = s.admissionId || s.admission?.admissionId || s.admission?.id || null;
+
+  // Only build admission object if real admission data exists from backend
+  const hasRealAdmission = Boolean(s.admission || (feeVal && pStatus));
+  const admissionObj = hasRealAdmission
+    ? s.admission
+      ? {
+          ...s.admission,
+          id: s.admission.id || admId,
+          admissionId: s.admission.admissionId || s.admission.id || admId,
+          admissionDate: s.admission.admissionDate || s.admission.created_at || admDate,
+          totalFee: Number(s.admission.totalFee || feeVal),
+          paymentStatus: s.admission.paymentStatus || pStatus,
+          paymentType: s.admission.paymentType || pType,
+          emiTenure: s.admission.emiTenure || eTenure,
+          emiMonthlyAmount: s.admission.emiMonthlyAmount || eMonthly,
+        }
+      : {
+          id: admId,
+          admissionId: admId,
+          admissionDate: admDate,
+          totalFee: feeVal,
+          paymentStatus: pStatus,
+          paymentType: pType,
+          emiTenure: eTenure,
+          emiMonthlyAmount: eMonthly,
+          emiPaidCount: s.emiPaidCount || null,
+        }
     : null;
 
   return {
@@ -112,10 +66,11 @@ export const normalizeStudentRecord = (s, idx = 0) => {
     name: full,
     email: mail,
     phone: s.phone || s.phoneNumber || "",
-    address: s.address || "Main City",
-    gender: s.gender || "Male",
-    course: s.course || s.enrolledCourse || "Java Full Stack",
+    address: s.address || "",
+    gender: s.gender || "",
+    course: s.course || s.enrolledCourse || "",
     status: normalizeStatus(s.status),
+    // Only set fee/payment fields if real data exists
     fees: feeVal,
     totalFee: feeVal,
     paymentType: pType,
@@ -138,14 +93,12 @@ const getLocalStudents = () => {
     const data = localStorage.getItem(STORAGE_KEY);
     if (data) {
       const parsed = JSON.parse(data);
-      const cleaned = filterOutNatasha(parsed);
-      saveLocalStudents(cleaned);
-      return cleaned;
+      return filterOutNatasha(parsed);
     }
   } catch (e) {
     // Quietly fallback
   }
-  return filterOutNatasha(DEFAULT_STUDENTS);
+  return []; // Return empty — no fake hardcoded students
 };
 
 const saveLocalStudents = (list) => {

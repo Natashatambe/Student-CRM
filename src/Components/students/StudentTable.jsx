@@ -171,13 +171,31 @@ function StudentTable({ students = [], loading = false, onEdit, onDelete, onView
       enableSorting: false,
       cell: ({ row }) => {
         const s = row.original;
-        const idx = row.index;
         const st = normalizeStatus(s.status);
         const isActive = st === "Active";
-        const feeNum = Number(s.totalFee || s.fees || 50000);
-        const payStatus = s.paymentStatus || (isActive ? "Paid" : "Pending");
+
+        // Only show fee/admission data for Active students
+        if (!isActive) {
+          const msgMap = {
+            Pending:  { text: "Pending Enrollment",   cls: "text-[#cc785c]" },
+            Enquiry:  { text: "Enquiry Prospect",     cls: "text-[#8e8b82]" },
+            Inactive: { text: "Student Inactive",     cls: "text-[#c64545]" },
+          };
+          const { text, cls } = msgMap[st] || { text: "No Admission Yet", cls: "text-[#8e8b82]" };
+          return <span className={`text-[11px] italic ${cls}`}>{text}</span>;
+        }
+
+        // Only show fee data if the student has a REAL admission record (fee + paymentStatus from backend)
+        const hasRealAdmission = Boolean((s.totalFee || s.fees) && s.paymentStatus);
+
+        if (!hasRealAdmission) {
+          return <span className="text-[11px] text-[#8e8b82] italic">No Admission Yet</span>;
+        }
+
+        const feeNum = Number(s.totalFee || s.fees);
+        const payStatus = s.paymentStatus;
         const admDate = s.admissionDate || s.admission?.admissionDate;
-        return isActive || s.totalFee || s.admissionDate ? (
+        return (
           <div className="space-y-1 text-xs">
             <div className="flex items-center gap-2">
               <span className="font-bold text-[#141413] tracking-tight">₹{feeNum.toLocaleString()}</span>
@@ -192,8 +210,6 @@ function StudentTable({ students = [], loading = false, onEdit, onDelete, onView
               )}
             </div>
           </div>
-        ) : (
-          <span className="text-[11px] text-[#8e8b82] italic">No Admission Yet</span>
         );
       },
     },

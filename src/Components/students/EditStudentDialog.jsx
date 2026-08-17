@@ -34,13 +34,15 @@ function EditStudentDialog({
       }
 
       const sId = studentData.id || studentData.studentId || "";
-      const feeVal = Number(studentData.totalFee || studentData.fees || studentData.admission?.totalFee || 50000);
+      // Only use REAL fee/admission data — no invented defaults
+      const rawFee = studentData.totalFee ?? studentData.fees ?? studentData.admission?.totalFee ?? null;
+      const feeVal = rawFee !== null ? Number(rawFee) : "";
       const pType = studentData.paymentType || studentData.admission?.paymentType || "Full";
       const eTenure = Number(studentData.emiTenure || studentData.admission?.emiTenure || 3);
       const normStatus = normalizeStatus(studentData.status);
-      const pStatus = studentData.paymentStatus || studentData.admission?.paymentStatus || (pType === "EMI" ? "Partial" : (normStatus === "Active" ? "Paid" : "Pending"));
-      const admId = studentData.admissionId || studentData.admission?.admissionId || studentData.admission?.id || sId;
-      const admDate = studentData.admissionDate || studentData.admission?.admissionDate || new Date().toISOString().split("T")[0];
+      const pStatus = studentData.paymentStatus || studentData.admission?.paymentStatus || (pType === "EMI" ? "Partial" : (normStatus === "Active" && feeVal ? "Paid" : ""));
+      const admId = studentData.admissionId || studentData.admission?.admissionId || studentData.admission?.id || "";
+      const admDate = studentData.admissionDate || studentData.admission?.admissionDate || "";
 
       setStudent({
         ...studentData,
@@ -54,14 +56,14 @@ function EditStudentDialog({
         phone: studentData.phone || studentData.phoneNumber || studentData.phoneNo || "",
         gender: studentData.gender || "Male",
         address: studentData.address || "",
-        course: studentData.course || studentData.enrolledCourse || "Java Full Stack",
+        course: studentData.course || studentData.enrolledCourse || "",
         status: normStatus,
         fees: feeVal,
         totalFee: feeVal,
         paymentType: pType,
         paymentStatus: pStatus,
         emiTenure: eTenure,
-        emiMonthlyAmount: pType === "EMI" ? Math.round(feeVal / eTenure) : null,
+        emiMonthlyAmount: pType === "EMI" && feeVal ? Math.round(Number(feeVal) / eTenure) : "",
       });
     }
   }, [studentData, open]);
@@ -80,13 +82,18 @@ function EditStudentDialog({
     const finalFirstName = fName || "Student";
     const finalLastName = lName || "Partner";
     const sId = student.id || student.studentId || studentData?.id || studentData?.studentId || 1;
-    const feeVal = Number(student.totalFee || student.fees || 50000);
-    const pType = student.paymentType || "Full";
-    const eTenure = Number(student.emiTenure || 3);
-    const eMonthly = pType === "EMI" ? Number(student.emiMonthlyAmount || Math.round(feeVal / eTenure)) : null;
+    const feeVal = student.totalFee != null && student.totalFee !== ""
+      ? Number(student.totalFee)
+      : student.fees != null && student.fees !== ""
+      ? Number(student.fees)
+      : null;
+    const pType = student.paymentType || null;
+    const eTenure = pType === "EMI" ? Number(student.emiTenure || 3) : null;
+    const eMonthly = pType === "EMI" && feeVal && eTenure ? Number(student.emiMonthlyAmount || Math.round(feeVal / eTenure)) : null;
     const normStatus = normalizeStatus(student.status);
-    const admId = student.admissionId || studentData?.admissionId || sId;
-    const admDate = student.admissionDate || studentData?.admissionDate || new Date().toISOString().split("T")[0];
+    const admId = student.admissionId || studentData?.admissionId || null;
+    const admDate = student.admissionDate || studentData?.admissionDate || (normStatus === "Active" ? new Date().toISOString().split("T")[0] : null);
+    const pStatus = student.paymentStatus || null;
 
     const payload = {
       ...studentData,
@@ -99,16 +106,16 @@ function EditStudentDialog({
       lastName: finalLastName,
       name: `${finalFirstName} ${finalLastName}`.trim(),
       email: student.email ? student.email.trim() : `${finalFirstName.toLowerCase()}@gmail.com`,
-      phone: student.phone ? String(student.phone).trim() : "9876543210",
-      address: student.address ? student.address.trim() : "Main City",
+      phone: student.phone ? String(student.phone).trim() : "",
+      address: student.address ? student.address.trim() : "",
       gender: student.gender || "Male",
-      course: student.course || "Java Full Stack",
+      course: student.course || "",
       status: normStatus,
       fees: feeVal,
       totalFee: feeVal,
       paymentType: pType,
-      paymentStatus: student.paymentStatus || (pType === "EMI" ? "Partial" : (normStatus === "Active" ? "Paid" : "Pending")),
-      emiTenure: pType === "EMI" ? eTenure : null,
+      paymentStatus: pStatus,
+      emiTenure: eTenure,
       emiMonthlyAmount: eMonthly,
     };
 
