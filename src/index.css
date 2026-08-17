@@ -225,6 +225,52 @@ h1, h2, h3, .font-serif-display {
   border-color: #e6dfd8 !important;
 }
 
+/* Warm Editorial Dropdown Select & Option Theme Styling */
+select {
+  background-color: #faf9f5 !important;
+  color: #141413 !important;
+  border-color: #e6dfd8 !important;
+  font-family: inherit;
+}
+
+select option {
+  background-color: #faf9f5 !important;
+  color: #141413 !important;
+  padding: 8px 12px;
+  font-size: 13px;
+}
+
+select option:checked,
+select option:hover {
+  background-color: #efe9de !important;
+  color: #cc785c !important;
+  font-weight: 600;
+}
+
+/* Warm Calendar & Datetime-Local Picker Input Styling */
+input[type="date"],
+input[type="datetime-local"],
+input[type="time"] {
+  color-scheme: light;
+  background-color: #faf9f5 !important;
+  color: #141413 !important;
+  border-color: #e6dfd8 !important;
+}
+
+input[type="date"]::-webkit-calendar-picker-indicator,
+input[type="datetime-local"]::-webkit-calendar-picker-indicator,
+input[type="time"]::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  opacity: 0.8;
+  filter: sepia(50%) saturate(300%) hue-rotate(330deg);
+  transition: opacity 0.15s ease-in-out;
+}
+
+input[type="date"]::-webkit-calendar-picker-indicator:hover,
+input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover {
+  opacity: 1;
+}
+
 .dark {
   --destructive-foreground: var(--color-red-600);
   --success: var(--color-emerald-500);

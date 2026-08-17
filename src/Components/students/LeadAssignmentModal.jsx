@@ -1,5 +1,8 @@
 import { useState, useEffect } from "react";
-import { UserCheck, X, CheckCircle2 } from "lucide-react";
+import { UserCheck, CheckCircle2 } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogBody, DialogFooter } from "../ui/dialog";
+import { Button } from "../ui/button";
+import { Select } from "../ui/select";
 import { getCounselors } from "../../services/userService";
 import { assignLeads } from "../../services/studentService";
 
@@ -46,69 +49,61 @@ export default function LeadAssignmentModal({ selectedLeadIds, onClose, onSucces
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="bg-[#1f1e1b] border border-[#322f2b] rounded-2xl w-full max-w-md p-6 space-y-4 shadow-2xl text-[#faf9f5]">
-        <div className="flex justify-between items-center border-b border-[#252320] pb-3">
-          <div className="flex items-center gap-2">
-            <UserCheck className="h-5 w-5 text-[#cc785c]" />
-            <h3 className="text-base font-serif-display font-semibold">Assign Enquiries / Leads</h3>
+    <Dialog open={true} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>Assign Enquiries / Leads</DialogTitle>
+          <DialogDescription>Assign selected student leads to a designated staff counsellor</DialogDescription>
+        </DialogHeader>
+
+        <DialogBody className="space-y-4">
+          <div className="p-3.5 bg-[#efe9de] border border-[#e6dfd8] rounded-xl text-xs space-y-1">
+            <span className="text-[10px] uppercase font-bold text-[#6c6a64]">Selected Batch</span>
+            <p className="font-bold text-emerald-800">{selectedLeadIds.length} Lead(s) Selected for Assignment</p>
           </div>
-          <button onClick={onClose} className="text-[#a09d96] hover:text-white">
-            <X className="h-4 w-4" />
-          </button>
-        </div>
 
-        <div className="p-3 bg-[#181715] border border-[#322f2b] rounded-xl text-xs space-y-1">
-          <span className="text-[10px] uppercase font-bold text-[#a09d96]">Selected Batch</span>
-          <p className="font-semibold text-emerald-400">{selectedLeadIds.length} Lead(s) Selected for Assignment</p>
-        </div>
+          {error && (
+            <div className="p-3 rounded-xl bg-rose-500/10 text-rose-800 border border-rose-500/30 text-xs">
+              {error}
+            </div>
+          )}
 
-        {error && (
-          <div className="p-2.5 rounded-xl bg-rose-900/40 text-rose-200 border border-rose-700 text-xs">
-            {error}
+          <div className="space-y-2 text-xs">
+            <label className="block font-semibold text-[#6c6a64]">Target Staff Counsellor</label>
+            <Select
+              value={selectedCounselorId}
+              onChange={(e) => setSelectedCounselorId(e.target.value)}
+            >
+              {counselors.map((c) => (
+                <option key={c.userId || c.id} value={c.userId || c.id}>
+                  {c.name || c.username} ({c.assignedLeadsCount || 0} Leads currently assigned)
+                </option>
+              ))}
+              {counselors.length === 0 && (
+                <>
+                  <option value="2">Sarah Counsellor (5 Leads assigned)</option>
+                  <option value="3">David Counsellor (3 Leads assigned)</option>
+                </>
+              )}
+            </Select>
           </div>
-        )}
+        </DialogBody>
 
-        <div className="space-y-2 text-xs">
-          <label className="block font-semibold text-[#a09d96]">Select Target Counsellor</label>
-          <select
-            value={selectedCounselorId}
-            onChange={(e) => setSelectedCounselorId(e.target.value)}
-            className="w-full px-3 py-2.5 bg-[#181715] border border-[#322f2b] rounded-xl text-xs text-[#faf9f5] focus:outline-none focus:border-[#cc785c]"
-          >
-            {counselors.map((c) => (
-              <option key={c.userId || c.id} value={c.userId || c.id}>
-                {c.name || c.username} ({c.assignedLeadsCount || 0} Leads currently assigned)
-              </option>
-            ))}
-            {counselors.length === 0 && (
-              <>
-                <option value="2">Sarah Counsellor (5 Leads assigned)</option>
-                <option value="3">David Counsellor (3 Leads assigned)</option>
-              </>
-            )}
-          </select>
-        </div>
-
-        <div className="pt-3 flex justify-end gap-2 border-t border-[#252320]">
-          <button
-            type="button"
-            onClick={onClose}
-            className="px-4 py-2 bg-[#252320] text-[#faf9f5] rounded-xl text-xs font-semibold"
-          >
+        <DialogFooter>
+          <Button type="button" variant="outline" onClick={onClose}>
             Cancel
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
             onClick={handleAssign}
             disabled={loading}
-            className="px-4 py-2 bg-[#cc785c] hover:bg-[#a9583e] text-white rounded-xl text-xs font-bold shadow-md flex items-center gap-1.5"
+            className="bg-[#cc785c] hover:bg-[#a9583e] font-bold gap-1.5"
           >
             <CheckCircle2 className="h-4 w-4" />
             {loading ? "Assigning..." : "Confirm Assignment"}
-          </button>
-        </div>
-      </div>
-    </div>
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
