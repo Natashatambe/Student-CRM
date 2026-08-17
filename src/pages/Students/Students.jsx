@@ -7,6 +7,8 @@ import DeleteStudentDialog from "../../Components/students/DeleteStudentDialog";
 import ViewStudentDialog from "../../Components/students/ViewStudentDialog";
 import StudentStatsCard from "../../Components/students/StudentStatsCard";
 import PageHeader from "../../Components/common/PageHeader";
+import LeadAssignmentModal from "../../Components/students/LeadAssignmentModal";
+import ClickToCallModal from "../../Components/dialer/ClickToCallModal";
 
 import { Button } from "../../Components/ui/button";
 import { Input } from "../../Components/ui/input";
@@ -14,12 +16,13 @@ import { Select } from "../../Components/ui/select";
 import { Card, CardContent } from "../../Components/ui/card";
 import { Tabs, TabsList, TabsTrigger } from "../../Components/ui/tabs";
 import { useToast } from "../../Components/ui/toast";
-import { Plus, Search, Download, FileSpreadsheet, FileText, X, Filter } from "lucide-react";
+import { Plus, Search, Download, FileSpreadsheet, FileText, X, Filter, UserCheck, PhoneCall } from "lucide-react";
 import {
   getStudents,
   addStudent,
   updateStudent,
   deleteStudent,
+  updateLeadStage,
   normalizeStudentRecord,
 } from "../../services/studentService";
 import { addAdmission, updateAdmission, deleteAdmission, getAdmissions } from "../../services/admissionService";
@@ -35,6 +38,8 @@ const COURSE_TRACKS = [
   "React JS Track",
 ];
 
+const LEAD_STAGES = ["ALL", "Open", "CNR", "Call Back", "Stage 2", "Stage 2.5", "Admission Done"];
+
 function Students() {
   const { showToast } = useToast();
 
@@ -48,15 +53,23 @@ function Students() {
   const [openDelete, setOpenDelete] = useState(false);
   const [studentToDelete, setStudentToDelete] = useState(null);
 
+  const [openAssignModal, setOpenAssignModal] = useState(false);
+  const [selectedLeadIds, setSelectedLeadIds] = useState([]);
+  const [dialerStudent, setDialerStudent] = useState(null);
+
   const [search, setSearch] = useState("");
+  const [stageFilter, setStageFilter] = useState("ALL");
   const [statusFilter, setStatusFilter] = useState("all");
   const [courseFilter, setCourseFilter] = useState("all");
+  const [unassignedOnly, setUnassignedOnly] = useState(false);
 
+  const userRole = localStorage.getItem("userRole") || "ROLE_ADMIN";
+  const currentUserId = localStorage.getItem("userId");
+  const isAdmin = userRole === "ROLE_ADMIN";
 
   const loadStudentsFromBackend = async () => {
     try {
       setLoading(true);
-      // Fetch students AND admissions in parallel
       const [studRes, admRes] = await Promise.all([
         getStudents(),
         getAdmissions(),
@@ -64,8 +77,6 @@ function Students() {
 
       if (studRes && studRes.data) {
         let list = Array.isArray(studRes.data) ? studRes.data : (studRes.data.data || []);
-
-        // Build a map of studentId -> admission for fast lookup
         const admList = admRes?.data || [];
         const admByStudentId = {};
         admList.forEach((adm) => {
@@ -73,9 +84,8 @@ function Students() {
           if (sid) admByStudentId[sid] = adm;
         });
 
-        // Merge admission data into each student record
         const sortedList = [...list].sort((a, b) => Number(b.id || b.studentId || 0) - Number(a.id || a.studentId || 0));
-        const mapped = sortedList.map((s, idx) => {
+        let mapped = sortedList.map((s, idx) => {
           const sId = String(s.id || s.studentId || "");
           const matchedAdm = admByStudentId[sId] || null;
           return normalizeStudentRecord(
@@ -83,10 +93,16 @@ function Students() {
             idx
           );
         });
+
+        // Counsellor role restriction: filter to only assigned leads if Counsellor
+        if (!isAdmin && currentUserId) {
+          mapped = mapped.filter((s) => String(s.assignedCounselorId) === String(currentUserId));
+        }
+
         setStudents(mapped);
       }
     } catch (error) {
-      console.log("Students API loaded with local data:", error);
+      console.log("Students API error:", error);
     } finally {
       setLoading(false);
     }
@@ -99,6 +115,17 @@ function Students() {
     if (q) setSearch(q);
   }, []);
 
+  const handleStageChange = async (studentId, newStage) => {
+    try {
+      await updateLeadStage(studentId, newStage);
+      setStudents((prev) =>
+        prev.map((s) => (String(s.id || s.studentId) === String(studentId) ? { ...s, leadStage: newStage } : s))
+      );
+      showToast(`Updated enquiry stage to "${newStage}"`, "success");
+    } catch (err) {
+      showToast("Failed to update stage", "error");
+    }
+  };
 
   const handleAddStudent = async (newStudent) => {
     const payload = {
@@ -111,6 +138,8 @@ function Students() {
       gender: newStudent.gender,
       course: newStudent.course,
       status: newStudent.status || "Enquiry",
+      leadStage: "Open",
+      leadSource: newStudent.leadSource || "Website",
       totalFee: Number(newStudent.totalFee || newStudent.fees || 50000),
       fees: Number(newStudent.fees || newStudent.totalFee || 50000),
       paymentType: newStudent.paymentType || "Full",
@@ -123,61 +152,10 @@ function Students() {
       const res = await addStudent(payload);
       if (res?.data) {
         studentObj = res.data;
-        showToast(`Registered student partner ${studentObj.firstName || payload.firstName} ${studentObj.lastName || payload.lastName} (${payload.status})!`, "success");
+        showToast(`Registered lead ${studentObj.firstName || payload.firstName} (${payload.leadSource})!`, "success");
       }
     } catch (error) {
-      console.log("API add student error:", error);
-      showToast(`Registered student enquiry record saved!`, "success");
-    }
-
-    const effectiveStudentObj = studentObj || {
-      id: students.length > 0 ? Math.max(...students.map(s => Number(s.id || 0))) + 1 : 1,
-      ...payload
-    };
-
-    // Prepend to top of list (latest entry first)
-    setStudents((prev) => {
-      const sId = effectiveStudentObj.id || effectiveStudentObj.studentId;
-      const exists = prev.some((s) => String(s.id || s.studentId) === String(sId));
-      if (exists) return prev;
-      const formattedId = `STU-${101 + prev.length}`;
-      return [
-        {
-          ...effectiveStudentObj,
-          id: sId,
-          studentId: sId,
-          formattedId,
-          status: normalizeStatus(effectiveStudentObj.status),
-        },
-        ...prev,
-      ];
-    });
-
-    if (newStudent.status === "Active") {
-      try {
-        const realCourseTrack = effectiveStudentObj.course || newStudent.course || "Java Full Stack";
-        const selectedFee = Number(newStudent.totalFee || newStudent.fees || 50000);
-        const cId = Number(effectiveStudentObj.courseId || newStudent.courseId || 1);
-        const sId = Number(effectiveStudentObj.id || effectiveStudentObj.studentId || 1);
-
-        await addAdmission({
-          studentId: sId,
-          courseId: cId,
-          studentName: effectiveStudentObj.name || `${effectiveStudentObj.firstName} ${effectiveStudentObj.lastName}`.trim(),
-          courseName: realCourseTrack,
-          admissionDate: new Date().toISOString().split("T")[0],
-          totalFee: selectedFee,
-          paymentStatus: newStudent.paymentStatus || "Paid",
-          paymentType: newStudent.paymentType || "Full",
-          student: { id: sId },
-          course: { id: cId, name: realCourseTrack },
-        });
-        showToast(`Active student ${effectiveStudentObj.firstName} enrolled in ${realCourseTrack} added to Admissions Desk!`, "success");
-      } catch (err) {
-        console.log("Auto-admission error for active student:", err);
-      }
-    } else {
-      showToast(`Student registered for ${newStudent.status || "Enquiry"} purpose`, "info");
+      showToast(`Lead record saved!`, "success");
     }
 
     await loadStudentsFromBackend();
@@ -197,96 +175,12 @@ function Students() {
     const sId = updatedStudent.id || updatedStudent.studentId;
     if (!sId) return;
 
-    const normStatus = normalizeStatus(updatedStudent.status);
-    const previousStudent = students.find((s) => String(s.id || s.studentId) === String(sId));
-    const wasNotActive = !previousStudent || normalizeStatus(previousStudent.status) !== "Active";
-    const isNowActive = normStatus === "Active";
-    const existingAdmId = previousStudent?.admissionId || previousStudent?.admission?.id || previousStudent?.admission?.admissionId;
-    const hasAdmission = Boolean(existingAdmId);
-
-    const realCourseTrack = updatedStudent.course || previousStudent?.course || "";
-    const cId = Number(updatedStudent.courseId || previousStudent?.courseId || 1);
-
-    const feeVal = updatedStudent.totalFee != null ? Number(updatedStudent.totalFee)
-      : updatedStudent.fees != null ? Number(updatedStudent.fees)
-      : previousStudent?.totalFee != null ? Number(previousStudent.totalFee)
-      : null;
-    const pType = updatedStudent.paymentType || previousStudent?.paymentType || null;
-    const eTenure = pType === "EMI" ? Number(updatedStudent.emiTenure || previousStudent?.emiTenure || 3) : null;
-    const eMonthly = pType === "EMI" ? Number(updatedStudent.emiMonthlyAmount || (feeVal && eTenure ? Math.round(feeVal / eTenure) : 0)) : null;
-    const pStatus = updatedStudent.paymentStatus || previousStudent?.paymentStatus || null;
-
-    const payload = {
-      ...previousStudent,
-      ...updatedStudent,
-      id: sId,
-      studentId: sId,
-      firstName: updatedStudent.firstName,
-      lastName: updatedStudent.lastName,
-      name: `${updatedStudent.firstName} ${updatedStudent.lastName}`.trim(),
-      email: updatedStudent.email,
-      phone: updatedStudent.phone,
-      address: updatedStudent.address,
-      gender: updatedStudent.gender,
-      course: realCourseTrack,
-      status: normStatus,
-      totalFee: feeVal,
-      fees: feeVal,
-      paymentType: pType,
-      paymentStatus: pStatus,
-      emiTenure: eTenure,
-      emiMonthlyAmount: eMonthly,
-    };
-
-    // Optimistically update UI
-    setStudents((prev) =>
-      prev.map((s) => (String(s.id || s.studentId) === String(sId) ? { ...s, ...payload, status: normStatus } : s))
-    );
-    if (studentToView && String(studentToView.id || studentToView.studentId) === String(sId)) {
-      setStudentToView((prev) => ({ ...prev, ...payload, status: normStatus }));
-    }
-
     try {
-      await updateStudent(sId, payload);
+      await updateStudent(sId, updatedStudent);
+      showToast(`Updated student details for ${updatedStudent.name || updatedStudent.firstName}`, "success");
     } catch (error) {
-      console.log("API update student error:", error);
+      console.log("Update error:", error);
     }
-
-    if (isNowActive && feeVal) {
-      try {
-        const admPayload = {
-          studentId: Number(sId),
-          courseId: cId,
-          studentName: payload.name,
-          studentEmail: payload.email,
-          courseName: realCourseTrack,
-          admissionDate: updatedStudent.admissionDate || previousStudent?.admissionDate || new Date().toISOString().split("T")[0],
-          totalFee: feeVal,
-          paymentStatus: pStatus || (pType === "EMI" ? "Partial" : "Paid"),
-          paymentType: pType || "Full",
-          emiTenure: eTenure,
-          emiMonthlyAmount: eMonthly,
-          student: { id: Number(sId), name: payload.name, email: payload.email },
-          course: { id: cId, name: realCourseTrack },
-        };
-
-        if (hasAdmission && !wasNotActive) {
-          // Student already had admission — UPDATE it
-          await updateAdmission(existingAdmId, admPayload).catch((err) => console.log("Admission update error:", err));
-          showToast(`\uD83D\uDCCB Admission & fee details updated for ${payload.name}!`, "success");
-        } else {
-          // First time becoming Active — CREATE admission
-          await addAdmission(admPayload).catch((err) => console.log("Admission add error:", err));
-          showToast(`\uD83C\uDF89 Student ${payload.name} approved for ${realCourseTrack}!`, "success");
-        }
-      } catch (err) {
-        console.log("Admission sync error:", err);
-      }
-    } else {
-      showToast(`Updated student status to ${normStatus} for ${payload.name}`, "success");
-    }
-
-    // Reload to get fresh merged student+admission data
     await loadStudentsFromBackend();
   };
 
@@ -296,19 +190,11 @@ function Students() {
   };
 
   const handleDeleteStudent = async (id) => {
-    const target = students.find((s) => String(s.id || s.studentId) === String(id));
-
-    setStudents((prev) => prev.filter((s) => String(s.id || s.studentId) !== String(id)));
-    showToast(`Removed student partner ${target?.name || target?.firstName || ""}`, "info");
-
     try {
-      const admId = target?.admission?.id || target?.admissionId;
-      if (admId) {
-        await deleteAdmission(admId).catch(() => null);
-      }
       await deleteStudent(id);
+      showToast(`Lead record removed`, "info");
     } catch (error) {
-      console.log("API delete student error:", error);
+      console.log("Delete error:", error);
     } finally {
       await loadStudentsFromBackend();
     }
@@ -320,49 +206,28 @@ function Students() {
       "Full Name": s.name,
       "Email Address": s.email,
       "Phone Number": s.phone,
-      Gender: s.gender,
-      Address: s.address,
+      "Lead Stage": s.leadStage || "Open",
+      "Lead Source": s.leadSource || "Website",
+      "Assigned Counsellor": s.assignedCounselorName || "Unassigned",
       "Course Track": s.course,
       "Active Status": s.status,
-      "Fee (INR)": s.totalFee || 0,
-      "Payment Plan": s.paymentType || "Full",
     }));
-    exportToExcel(exportData, "Student_Partner_Directory");
-    showToast("Exported Student Directory to Excel Sheet!", "success");
+    exportToExcel(exportData, "Student_Lead_CRM_Directory");
+    showToast("Exported Lead Directory to Excel!", "success");
   };
 
   const handleExportPDF = () => {
-    const headers = ["STU ID", "Partner Name", "Email", "Phone", "Course Track", "Status"];
+    const headers = ["STU ID", "Name", "Phone", "Lead Stage", "Source", "Assigned Counsellor"];
     const rows = filteredStudents.map((s, idx) => [
       s.formattedId || `STU-${101 + idx}`,
       s.name,
-      s.email || "N/A",
       s.phone || "N/A",
-      s.course || "General",
-      s.status,
+      s.leadStage || "Open",
+      s.leadSource || "Website",
+      s.assignedCounselorName || "Unassigned",
     ]);
-    exportToPDF("Student Partner Directory Report", headers, rows, "Student_Directory_PDF");
-    showToast("Exported PDF Report Sheet!", "success");
-  };
-
-  const handleExportInactivePDF = () => {
-    const inactiveList = students.filter((s) => (s.status || "").toLowerCase() === "inactive");
-    if (inactiveList.length === 0) {
-      showToast("No inactive students found to download PDF!", "info");
-      return;
-    }
-    const headers = ["STU ID", "Student Name", "Email Address", "Phone Number", "Course Track", "Address", "Status"];
-    const rows = inactiveList.map((s, idx) => [
-      s.formattedId || `STU-${101 + idx}`,
-      s.name || `${s.firstName || ""} ${s.lastName || ""}`.trim(),
-      s.email || "N/A",
-      s.phone || "N/A",
-      s.course || "Java Full Stack",
-      s.address || "Main City",
-      "Inactive",
-    ]);
-    exportToPDF("Inactive Student Partners Directory Report", headers, rows, "Inactive_Students_Report");
-    showToast(`Downloaded PDF report for ${inactiveList.length} Inactive Student(s)!`, "success");
+    exportToPDF("Lead & Enquiry CRM Report", headers, rows, "Lead_CRM_Report_PDF");
+    showToast("Exported PDF Report!", "success");
   };
 
   // Filter students (sorted DESC by ID)
@@ -378,9 +243,11 @@ function Students() {
       (student.email || "").toLowerCase().includes(q) ||
       (student.course || "").toLowerCase().includes(q) ||
       (student.phone || "").includes(q) ||
-      (student.address || "").toLowerCase().includes(q) ||
       formattedId.toLowerCase().includes(q) ||
       rawId.includes(q);
+
+    const matchesStage =
+      stageFilter === "ALL" || (student.leadStage || "Open").toLowerCase() === stageFilter.toLowerCase();
 
     const matchesStatus =
       statusFilter === "all" || (student.status || "").toLowerCase() === statusFilter.toLowerCase();
@@ -388,19 +255,36 @@ function Students() {
     const matchesCourse =
       courseFilter === "all" || (student.course || "").toLowerCase() === courseFilter.toLowerCase();
 
-    return matchesSearch && matchesStatus && matchesCourse;
+    const matchesUnassigned = !unassignedOnly || !student.assignedCounselorId;
+
+    return matchesSearch && matchesStage && matchesStatus && matchesCourse && matchesUnassigned;
   });
 
+  const unassignedCount = students.filter((s) => !s.assignedCounselorId).length;
 
   return (
     <Layout>
-      {/* Page Header */}
       <PageHeader
-        title="Student Partner Directory"
-        description="Manage partner student records, enrollment tracks, and active status"
-        categoryTag="Partner Desk"
+        title={isAdmin ? "Student & Enquiry CRM Desk" : "My Assigned Enquiries"}
+        description={isAdmin ? "Centralized student leads, assignment engine, click-to-call dialer, and stage transitions" : "Manage your assigned enquiries, calls, and follow-ups"}
+        categoryTag="CRM Core"
         actions={
           <div className="flex flex-wrap items-center gap-2">
+            {isAdmin && (
+              <Button
+                onClick={() => {
+                  const unassignedIds = students.filter((s) => !s.assignedCounselorId).map((s) => s.id || s.studentId);
+                  setSelectedLeadIds(unassignedIds.length > 0 ? unassignedIds : students.slice(0, 5).map((s) => s.id || s.studentId));
+                  setOpenAssignModal(true);
+                }}
+                variant="outline"
+                size="sm"
+                className="gap-1.5 border-[#cc785c]/40 bg-[#faf9f5] hover:bg-[#efe9de] text-[#cc785c] font-bold"
+              >
+                <UserCheck className="h-3.5 w-3.5" /> Assign Leads ({unassignedCount})
+              </Button>
+            )}
+
             <Button
               onClick={handleExportExcel}
               variant="outline"
@@ -420,79 +304,57 @@ function Students() {
             </Button>
 
             <Button
-              onClick={handleExportInactivePDF}
-              variant="outline"
-              size="sm"
-              className="gap-1.5 border-[#e6dfd8] bg-[#faf9f5] text-[#cc785c] hover:bg-[#efe9de]"
-            >
-              <FileText className="h-3.5 w-3.5 text-[#cc785c]" /> Inactive PDF
-            </Button>
-
-            <Button
               onClick={() => setOpenAdd(true)}
               variant="primary"
               size="sm"
               className="shadow-xs gap-1.5 bg-[#cc785c] hover:bg-[#a9583e]"
             >
-              <Plus className="h-3.5 w-3.5" /> Enroll Student
+              <Plus className="h-3.5 w-3.5" /> Add New Lead
             </Button>
           </div>
         }
       />
 
-      {/* Stats Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-8">
-        <StudentStatsCard
-          title="Total Students"
-          value={students.length}
-          active={statusFilter === "all"}
-          onClick={() => setStatusFilter("all")}
-        />
-        <StudentStatsCard
-          title="Active Students"
-          value={students.filter((s) => s.status === "Active").length}
-          active={statusFilter === "active"}
-          onClick={() => setStatusFilter("active")}
-        />
-        <StudentStatsCard
-          title="Pending Students"
-          value={students.filter((s) => s.status === "Pending").length}
-          active={statusFilter === "pending"}
-          onClick={() => setStatusFilter("pending")}
-        />
-        <StudentStatsCard
-          title="Inactive Students"
-          value={students.filter((s) => s.status === "Inactive").length}
-          active={statusFilter === "inactive"}
-          onClick={() => setStatusFilter("inactive")}
-        />
+      {/* Stage Breakdown Tabs / Quick Stats */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
+        {LEAD_STAGES.filter(st => st !== "ALL").map((st) => {
+          const count = students.filter((s) => (s.leadStage || "Open") === st).length;
+          const isActive = stageFilter === st;
+
+          return (
+            <div
+              key={st}
+              onClick={() => setStageFilter(isActive ? "ALL" : st)}
+              className={`p-3 rounded-2xl border cursor-pointer transition select-none ${
+                isActive
+                  ? "bg-[#cc785c] text-white border-[#cc785c] shadow-md"
+                  : "bg-[#efe9de] border-[#e6dfd8] hover:border-[#cc785c]/50 text-[#141413]"
+              }`}
+            >
+              <span className={`text-[10px] uppercase font-bold tracking-wider block ${isActive ? "text-white/80" : "text-[#6c6a64]"}`}>
+                {st}
+              </span>
+              <h4 className="text-xl font-serif-display font-bold mt-0.5">{count}</h4>
+            </div>
+          );
+        })}
       </div>
 
       {/* Main Table Card */}
       <Card className="bg-[#efe9de] border-[#e6dfd8]">
         <CardContent className="p-4 md:p-6 space-y-6">
-          {/* Controls Bar */}
+          {/* Search & Stage Filter Bar */}
           <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
             <div className="flex flex-col sm:flex-row items-center gap-2 flex-1 max-w-2xl">
               <div className="relative flex-1 w-full">
                 <Search className="absolute left-3.5 top-3 h-4 w-4 text-[#8e8b82]" />
                 <Input
                   type="text"
-                  placeholder="Search name, STU ID, email, phone, course..."
+                  placeholder="Search name, phone, course, email..."
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   className="pl-10 pr-9 rounded-md bg-[#faf9f5] border-[#e6dfd8] w-full"
                 />
-                {search && (
-                  <button
-                    type="button"
-                    onClick={() => setSearch("")}
-                    className="absolute right-3 top-3 text-[#8e8b82] hover:text-[#141413] transition"
-                    title="Clear search"
-                  >
-                    <X className="h-4 w-4" />
-                  </button>
-                )}
               </div>
 
               <div className="w-full sm:w-56 shrink-0">
@@ -501,7 +363,7 @@ function Students() {
                   onChange={(e) => setCourseFilter(e.target.value)}
                   className="bg-[#faf9f5] border-[#e6dfd8] text-xs font-semibold"
                 >
-                  <option value="all">All Course Tracks</option>
+                  <option value="all">All Courses</option>
                   {COURSE_TRACKS.map((track) => (
                     <option key={track} value={track}>
                       {track}
@@ -511,66 +373,19 @@ function Students() {
               </div>
             </div>
 
+            {/* Stage Tabs */}
             <div className="overflow-x-auto pb-1 lg:pb-0 shrink-0">
-              <Tabs value={statusFilter} onValueChange={setStatusFilter}>
+              <Tabs value={stageFilter} onValueChange={setStageFilter}>
                 <TabsList className="bg-[#faf9f5] border-[#e6dfd8]">
-                  <TabsTrigger value="all" className="text-xs">
-                    All ({students.length})
-                  </TabsTrigger>
-                  <TabsTrigger value="active" className="text-xs">
-                    Active ({students.filter((s) => s.status === "Active").length})
-                  </TabsTrigger>
-                  <TabsTrigger value="pending" className="text-xs">
-                    Pending ({students.filter((s) => s.status === "Pending").length})
-                  </TabsTrigger>
-                  <TabsTrigger value="enquiry" className="text-xs">
-                    Enquiry ({students.filter((s) => s.status === "Enquiry").length})
-                  </TabsTrigger>
-                  <TabsTrigger value="inactive" className="text-xs">
-                    Inactive ({students.filter((s) => s.status === "Inactive").length})
-                  </TabsTrigger>
+                  {LEAD_STAGES.map((st) => (
+                    <TabsTrigger key={st} value={st} className="text-xs">
+                      {st === "ALL" ? `All (${students.length})` : st}
+                    </TabsTrigger>
+                  ))}
                 </TabsList>
               </Tabs>
             </div>
           </div>
-
-          {/* Active Filter Clear Banner */}
-          {(search || statusFilter !== "all" || courseFilter !== "all") && (
-            <div className="flex items-center justify-between gap-2 bg-[#faf9f5] p-2.5 rounded-lg border border-[#e6dfd8] text-xs">
-              <div className="flex items-center gap-2 flex-wrap text-[#6c6a64]">
-                <span className="font-semibold text-[#141413] flex items-center gap-1">
-                  <Filter className="h-3.5 w-3.5 text-[#cc785c]" /> Active Filters:
-                </span>
-                {statusFilter !== "all" && (
-                  <span className="bg-[#efe9de] text-[#cc785c] font-bold px-2 py-0.5 rounded border border-[#e6dfd8]">
-                    Status: {statusFilter.toUpperCase()}
-                  </span>
-                )}
-                {courseFilter !== "all" && (
-                  <span className="bg-[#efe9de] text-[#141413] font-bold px-2 py-0.5 rounded border border-[#e6dfd8]">
-                    Track: {courseFilter}
-                  </span>
-                )}
-                {search && (
-                  <span className="bg-[#efe9de] text-[#141413] font-bold px-2 py-0.5 rounded border border-[#e6dfd8]">
-                    Query: "{search}"
-                  </span>
-                )}
-                <span className="text-[#8e8b82]">({filteredStudents.length} results)</span>
-              </div>
-              <button
-                type="button"
-                onClick={() => {
-                  setSearch("");
-                  setStatusFilter("all");
-                  setCourseFilter("all");
-                }}
-                className="text-xs text-[#cc785c] font-bold hover:underline shrink-0"
-              >
-                Reset All
-              </button>
-            </div>
-          )}
 
           {/* Student Table View */}
           <StudentTable
@@ -579,6 +394,8 @@ function Students() {
             onView={handleView}
             onEdit={handleEdit}
             onDelete={handleDeleteClick}
+            onStageChange={handleStageChange}
+            onCall={(student) => setDialerStudent(student)}
             onStatusChange={(student, newStatus) =>
               handleUpdateStudent({ ...student, status: newStatus })
             }
@@ -592,12 +409,6 @@ function Students() {
         setOpen={setOpenView}
         student={studentToView}
         onEdit={handleEdit}
-        onStatusChange={(student, newStatus) => {
-          handleUpdateStudent({ ...student, status: newStatus });
-          if (studentToView) {
-            setStudentToView({ ...studentToView, status: newStatus });
-          }
-        }}
       />
 
       <AddStudentDialog
@@ -619,6 +430,30 @@ function Students() {
         student={studentToDelete}
         onDelete={handleDeleteStudent}
       />
+
+      {/* Lead Assignment Modal */}
+      {openAssignModal && (
+        <LeadAssignmentModal
+          selectedLeadIds={selectedLeadIds}
+          onClose={() => setOpenAssignModal(false)}
+          onSuccess={() => {
+            showToast("Leads assigned successfully!", "success");
+            loadStudentsFromBackend();
+          }}
+        />
+      )}
+
+      {/* Dialer Modal */}
+      {dialerStudent && (
+        <ClickToCallModal
+          student={dialerStudent}
+          onClose={() => setDialerStudent(null)}
+          onCallLogged={() => {
+            showToast("Call record logged successfully!", "success");
+            setDialerStudent(null);
+          }}
+        />
+      )}
     </Layout>
   );
 }

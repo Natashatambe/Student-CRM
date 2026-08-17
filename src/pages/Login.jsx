@@ -19,7 +19,7 @@ function Login() {
     setError("");
 
     if (!username || !password) {
-      setError("Please enter your admin username and password");
+      setError("Please enter your username and password");
       return;
     }
 
@@ -27,22 +27,31 @@ function Login() {
       setLoading(true);
       const response = await loginUser({ username, password });
 
-      const token =
-        response.data?.token ||
-        response.data?.data?.token ||
-        response.data?.accessToken;
+      const resData = response.data || {};
+      const token = resData.token || resData.data?.token || "mock-jwt-token";
+      const isCounselor = username.toLowerCase().includes("counselor") || username.toLowerCase().includes("counsellor");
+      const userRole = isCounselor ? "ROLE_COUNSELLOR" : (resData.role || resData.data?.role || "ROLE_ADMIN");
+      const userId = resData.userId || resData.data?.userId || (isCounselor ? 2 : 1);
+      const name = resData.name || resData.data?.name || (isCounselor ? "Sarah Counsellor" : "System Admin");
 
-      if (token) {
-        localStorage.setItem("token", token);
-      } else {
-        localStorage.setItem("loggedIn", "true");
-      }
+      localStorage.setItem("token", token);
+      localStorage.setItem("loggedIn", "true");
+      localStorage.setItem("userRole", userRole);
+      localStorage.setItem("userId", String(userId));
+      localStorage.setItem("userName", name);
+      localStorage.setItem("username", username);
 
       navigate("/dashboard");
     } catch (err) {
       console.error("Login Error:", err);
       if (!err.response) {
+        const isCounselor = username.toLowerCase().includes("counselor") || username.toLowerCase().includes("counsellor");
+        localStorage.setItem("token", "mock-jwt-token");
         localStorage.setItem("loggedIn", "true");
+        localStorage.setItem("userRole", isCounselor ? "ROLE_COUNSELLOR" : "ROLE_ADMIN");
+        localStorage.setItem("userId", isCounselor ? "2" : "1");
+        localStorage.setItem("userName", isCounselor ? "Sarah Counsellor" : "System Admin");
+        localStorage.setItem("username", username);
         navigate("/dashboard");
         return;
       }
@@ -56,10 +65,24 @@ function Login() {
     }
   };
 
-  const handleQuickDemoLogin = () => {
-    setUsername("admin");
-    setPassword("admin123");
-    localStorage.setItem("loggedIn", "true");
+  const handleQuickDemoLogin = (role = "ROLE_ADMIN") => {
+    if (role === "ROLE_COUNSELLOR") {
+      setUsername("counselor1");
+      setPassword("admin123");
+      localStorage.setItem("loggedIn", "true");
+      localStorage.setItem("userRole", "ROLE_COUNSELLOR");
+      localStorage.setItem("userId", "2");
+      localStorage.setItem("userName", "Sarah Counsellor");
+      localStorage.setItem("username", "counselor1");
+    } else {
+      setUsername("admin");
+      setPassword("admin123");
+      localStorage.setItem("loggedIn", "true");
+      localStorage.setItem("userRole", "ROLE_ADMIN");
+      localStorage.setItem("userId", "1");
+      localStorage.setItem("userName", "System Admin");
+      localStorage.setItem("username", "admin");
+    }
     navigate("/dashboard");
   };
 

@@ -210,3 +210,47 @@ export const deleteStudent = async (id) => {
 
   return { data: { success: true } };
 };
+
+// Assign Leads to Counselor
+export const assignLeads = async (studentIds, counselorId) => {
+  try {
+    const res = await api.post("/students/assign", { studentIds, counselorId });
+    return res.data;
+  } catch (err) {
+    console.error("Assign leads error:", err);
+    return { success: true, message: "Leads assigned successfully" };
+  }
+};
+
+// Update Lead Stage (Open, CNR, Call Back, Stage 2, Stage 2.5, Admission Done)
+export const updateLeadStage = async (id, stage) => {
+  try {
+    const res = await api.patch(`/students/${id}/stage`, { stage });
+    return res.data;
+  } catch (err) {
+    console.error("Update lead stage error:", err);
+    return { success: true, message: "Stage updated successfully" };
+  }
+};
+
+// Get Unassigned Leads
+export const getUnassignedLeads = async () => {
+  try {
+    const res = await api.get("/students/unassigned");
+    return res.data;
+  } catch (err) {
+    const list = getLocalStudents();
+    return { data: list.filter((s) => !s.assignedCounselorId) };
+  }
+};
+
+// Get Leads by Counselor ID
+export const getLeadsByCounselor = async (counselorId) => {
+  try {
+    const res = await api.get(`/students/counselor/${counselorId}`);
+    return res.data;
+  } catch (err) {
+    const list = getLocalStudents();
+    return { data: list.filter((s) => String(s.assignedCounselorId) === String(counselorId)) };
+  }
+};

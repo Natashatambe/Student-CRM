@@ -190,38 +190,47 @@ function Navbar({ collapsed, setCollapsed }) {
           </DropdownMenuContent>
         </DropdownMenu>
 
-        {/* User Profile Dropdown with DiceBear Glyphs Avatar */}
-        <DropdownMenu>
-          <DropdownMenuTrigger className="flex items-center gap-2.5 pl-2 pr-3 py-1 rounded-md border border-[#e6dfd8] hover:bg-[#efe9de] transition active:scale-95 cursor-pointer bg-[#faf9f5]">
-            <Avatar className="h-8 w-8 ring-1 ring-[#cc785c] bg-[#efe9de]">
-              <AvatarImage src="https://api.dicebear.com/10.x/glyphs/svg?seed=SeniorAdminCRM" alt="Senior Admin" />
-              <AvatarFallback className="bg-[#cc785c] text-white font-medium text-xs">
-                SA
-              </AvatarFallback>
-            </Avatar>
-            <div className="text-left hidden lg:block">
-              <p className="text-xs font-medium text-[#141413] leading-tight">Admission Admin</p>
-              <p className="text-[10px] font-medium text-[#cc785c]">Portal Manager</p>
-            </div>
-            <ChevronDown className="h-3.5 w-3.5 text-[#6c6a64]" />
-          </DropdownMenuTrigger>
+        {/* User Profile Dropdown */}
+        {(() => {
+          const userRole = localStorage.getItem("userRole") || "ROLE_ADMIN";
+          const userName = localStorage.getItem("userName") || "System User";
+          const displayRole = userRole === "ROLE_ADMIN" ? "System Admin" : "Counsellor Desk";
+          const initials = userName.substring(0, 2).toUpperCase();
 
-          <DropdownMenuContent align="right" className="w-52 rounded-xl bg-[#faf9f5] border-[#e6dfd8]">
-            <DropdownMenuItem onClick={() => navigate("/dashboard")}>
-              <User className="h-4 w-4 mr-2 text-[#cc785c]" />
-              <span className="font-medium">My Profile</span>
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => navigate("/reports")}>
-              <Settings className="h-4 w-4 mr-2 text-[#cc785c]" />
-              <span className="font-medium">CRM Settings</span>
-            </DropdownMenuItem>
-            <div className="my-1 border-t border-[#e6dfd8]" />
-            <DropdownMenuItem onClick={handleLogout} destructive>
-              <LogOut className="h-4 w-4 mr-2" />
-              <span className="font-medium">Sign Out</span>
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+          return (
+            <DropdownMenu>
+              <DropdownMenuTrigger className="flex items-center gap-2.5 pl-2 pr-3 py-1 rounded-md border border-[#e6dfd8] hover:bg-[#efe9de] transition active:scale-95 cursor-pointer bg-[#faf9f5]">
+                <Avatar className="h-8 w-8 ring-1 ring-[#cc785c] bg-[#efe9de]">
+                  <AvatarImage src={`https://api.dicebear.com/10.x/glyphs/svg?seed=${userName}`} alt={userName} />
+                  <AvatarFallback className="bg-[#cc785c] text-white font-medium text-xs">
+                    {initials}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="text-left hidden lg:block">
+                  <p className="text-xs font-medium text-[#141413] leading-tight">{userName}</p>
+                  <p className="text-[10px] font-bold text-[#cc785c] uppercase">{displayRole}</p>
+                </div>
+                <ChevronDown className="h-3.5 w-3.5 text-[#6c6a64]" />
+              </DropdownMenuTrigger>
+
+              <DropdownMenuContent align="right" className="w-52 rounded-xl bg-[#faf9f5] border-[#e6dfd8]">
+                <DropdownMenuItem onClick={() => navigate("/dashboard")}>
+                  <User className="h-4 w-4 mr-2 text-[#cc785c]" />
+                  <span className="font-medium">My Profile</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => navigate("/reports")}>
+                  <Settings className="h-4 w-4 mr-2 text-[#cc785c]" />
+                  <span className="font-medium">CRM Reports</span>
+                </DropdownMenuItem>
+                <div className="my-1 border-t border-[#e6dfd8]" />
+                <DropdownMenuItem onClick={handleLogout} destructive>
+                  <LogOut className="h-4 w-4 mr-2" />
+                  <span className="font-medium">Sign Out</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          );
+        })()}
       </div>
     </header>
   );

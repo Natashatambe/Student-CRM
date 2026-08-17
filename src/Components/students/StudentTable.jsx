@@ -92,7 +92,7 @@ const StatusPill = ({ status, onSelect }) => {
 };
 
 /* ─── Main Component ─── */
-function StudentTable({ students = [], loading = false, onEdit, onDelete, onView, onStatusChange }) {
+function StudentTable({ students = [], loading = false, onEdit, onDelete, onView, onStatusChange, onStageChange, onCall }) {
   const columns = useMemo(() => [
 
 
@@ -207,6 +207,69 @@ function StudentTable({ students = [], loading = false, onEdit, onDelete, onView
                   <Calendar className="h-3 w-3 text-[#cc785c] shrink-0" />
                   {formatDate(admDate)}
                 </span>
+              )}
+            </div>
+          </div>
+        );
+      },
+    },
+
+    /* Lead Stage Column */
+    {
+      id: "leadStage",
+      accessorFn: (r) => r.leadStage || "Open",
+      header: ({ column }) => <DataGridColumnHeader column={column} title="Enquiry Stage" />,
+      size: 140,
+      cell: ({ row }) => {
+        const s = row.original;
+        const currentStage = s.leadStage || "Open";
+        const stages = ["Open", "CNR", "Call Back", "Stage 2", "Stage 2.5", "Admission Done"];
+
+        const stageColors = {
+          "Open": "bg-blue-500/15 text-blue-400 border-blue-500/30",
+          "CNR": "bg-amber-500/15 text-amber-400 border-amber-500/30",
+          "Call Back": "bg-purple-500/15 text-purple-400 border-purple-500/30",
+          "Stage 2": "bg-indigo-500/15 text-indigo-400 border-indigo-500/30",
+          "Stage 2.5": "bg-teal-500/15 text-teal-300 border-teal-500/30",
+          "Admission Done": "bg-emerald-500/20 text-emerald-300 border-emerald-500/30",
+        };
+
+        return (
+          <select
+            value={currentStage}
+            onChange={(e) => onStageChange?.(s.id || s.studentId, e.target.value)}
+            className={cn(
+              "px-2.5 py-1 rounded-full text-[10px] font-bold border focus:outline-none cursor-pointer",
+              stageColors[currentStage] || stageColors["Open"]
+            )}
+          >
+            {stages.map((st) => (
+              <option key={st} value={st} className="bg-[#191816] text-[#faf9f5]">
+                {st}
+              </option>
+            ))}
+          </select>
+        );
+      },
+    },
+
+    /* Assigned Counsellor & Source */
+    {
+      id: "counselor",
+      header: "Lead Source & Counsellor",
+      size: 170,
+      cell: ({ row }) => {
+        const s = row.original;
+        return (
+          <div className="space-y-0.5 text-xs">
+            <span className="inline-block text-[10px] uppercase font-bold px-2 py-0.5 rounded bg-[#efe9de] text-[#141413] border border-[#e6dfd8]">
+              Source: {s.leadSource || "Website"}
+            </span>
+            <div className="text-[11px] text-[#6c6a64]">
+              {s.assignedCounselorName ? (
+                <span className="text-[#cc785c] font-semibold">👤 {s.assignedCounselorName}</span>
+              ) : (
+                <span className="text-[#8e8b82] italic">Unassigned</span>
               )}
             </div>
           </div>

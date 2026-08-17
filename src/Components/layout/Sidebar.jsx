@@ -10,6 +10,10 @@ import {
   ChevronLeft,
   ChevronRight,
   Sparkles,
+  UserCheck,
+  ListFilter,
+  FileUp,
+  CalendarDays
 } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "../ui/avatar";
 import { getStudents } from "../../services/studentService";
@@ -18,6 +22,10 @@ function Sidebar({ collapsed, setCollapsed }) {
   const navigate = useNavigate();
   const location = useLocation();
   const [studentCount, setStudentCount] = useState(0);
+
+  const userRole = localStorage.getItem("userRole") || "ROLE_ADMIN";
+  const userName = localStorage.getItem("userName") || "System Admin";
+  const isAdmin = userRole === "ROLE_ADMIN";
 
   useEffect(() => {
     loadRealStudentCount();
@@ -37,7 +45,7 @@ function Sidebar({ collapsed, setCollapsed }) {
 
   const menuSections = [
     {
-      title: "Main Management",
+      title: "CRM Core Workflow",
       items: [
         {
           name: "Dashboard",
@@ -45,36 +53,64 @@ function Sidebar({ collapsed, setCollapsed }) {
           path: "/dashboard",
         },
         {
-          name: "Students",
+          name: isAdmin ? "All Leads / Students" : "My Assigned Leads",
           icon: <Users className="h-4.5 w-4.5 shrink-0" />,
           path: "/students",
           badge: String(studentCount || 0),
         },
         {
-          name: "Courses",
-          icon: <GraduationCap className="h-4.5 w-4.5 shrink-0" />,
-          path: "/courses",
+          name: "Follow-up Calendar",
+          icon: <CalendarDays className="h-4.5 w-4.5 shrink-0" />,
+          path: "/followups",
+          badge: "★ Schedule",
+          badgeVariant: "coral",
         },
         {
           name: "Admissions",
           icon: <ClipboardList className="h-4.5 w-4.5 shrink-0" />,
           path: "/admissions",
-          badge: "NEW",
-          badgeVariant: "coral",
         },
       ],
     },
+    ...(isAdmin
+      ? [
+          {
+            title: "Admin Controls",
+            items: [
+              {
+                name: "User Management",
+                icon: <UserCheck className="h-4.5 w-4.5 shrink-0" />,
+                path: "/users",
+              },
+              {
+                name: "Manage Lead Lists",
+                icon: <ListFilter className="h-4.5 w-4.5 shrink-0" />,
+                path: "/lead-sources",
+              },
+              {
+                name: "Import Excel / CSV",
+                icon: <FileUp className="h-4.5 w-4.5 shrink-0" />,
+                path: "/lead-import",
+              },
+              {
+                name: "Course Management",
+                icon: <GraduationCap className="h-4.5 w-4.5 shrink-0" />,
+                path: "/courses",
+              },
+            ],
+          },
+        ]
+      : []),
     {
-      title: "Finance & Insights",
+      title: "Finance & Reports",
       items: [
         {
           name: "Payments",
           icon: <CreditCard className="h-4.5 w-4.5 shrink-0" />,
           path: "/payments",
-          badge: "★ Dues",
         },
         {
-          name: "Reports",
+          name: "Analytics & Reports",
           icon: <FileBarChart className="h-4.5 w-4.5 shrink-0" />,
           path: "/reports",
         },
@@ -195,29 +231,29 @@ function Sidebar({ collapsed, setCollapsed }) {
           ))}
         </nav>
 
-        {/* Footer Admin Summary with DiceBear Glyphs Avatar */}
+        {/* Footer User Profile Summary */}
         <div className="p-3 border-t border-[#252320] bg-[#1f1e1b] shrink-0 overflow-hidden">
           {!collapsed ? (
             <div className="flex items-center gap-2 overflow-hidden">
               <Avatar className="h-8.5 w-8.5 ring-1 ring-[#cc785c]/40 shrink-0 bg-[#252320]">
-                <AvatarImage src="https://api.dicebear.com/10.x/glyphs/svg?seed=SeniorAdminCRM" alt="Senior Admin" />
+                <AvatarImage src={`https://api.dicebear.com/10.x/glyphs/svg?seed=${userName}`} alt={userName} />
                 <AvatarFallback className="bg-[#cc785c] text-white font-medium text-[11px]">
-                  SA
+                  {userName.substring(0, 2).toUpperCase()}
                 </AvatarFallback>
               </Avatar>
               <div className="truncate">
                 <p className="text-[11px] font-medium text-[#faf9f5] truncate flex items-center gap-1">
-                  Senior Admin <Sparkles className="h-2.5 w-2.5 text-[#cc785c] fill-current shrink-0" />
+                  {userName} <Sparkles className="h-2.5 w-2.5 text-[#cc785c] fill-current shrink-0" />
                 </p>
-                <p className="text-[9px] text-[#a09d96] truncate">Admission Portal</p>
+                <p className="text-[9px] text-[#a09d96] truncate font-semibold uppercase">{userRole.replace("ROLE_", "")}</p>
               </div>
             </div>
           ) : (
             <div className="flex justify-center">
               <Avatar className="h-7.5 w-7.5 ring-1 ring-[#cc785c]/40 shrink-0 bg-[#252320]">
-                <AvatarImage src="https://api.dicebear.com/10.x/glyphs/svg?seed=SeniorAdminCRM" alt="Senior Admin" />
+                <AvatarImage src={`https://api.dicebear.com/10.x/glyphs/svg?seed=${userName}`} alt={userName} />
                 <AvatarFallback className="bg-[#cc785c] text-white font-medium text-[10px]">
-                  SA
+                  {userName.substring(0, 2).toUpperCase()}
                 </AvatarFallback>
               </Avatar>
             </div>
